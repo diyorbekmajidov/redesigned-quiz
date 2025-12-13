@@ -1,0 +1,1 @@
+gunicorn confeg.wsgi:application
