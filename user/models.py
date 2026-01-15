@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 
 # Create your models here.
 
@@ -13,6 +14,11 @@ class User(models.Model):
         return self.name
 
 class Student(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     student_name = models.CharField(max_length=56, blank=True, null=True, verbose_name="Talaba_Ismi")
     phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
     student_imeg = models.ImageField(upload_to='media/', verbose_name="rasm")

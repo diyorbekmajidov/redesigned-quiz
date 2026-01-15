@@ -83,3 +83,7 @@ class AuthCallbackView(View):
             resource_owner_url = resource_owner_url
         )
         access_token_response = client.get_access_token(code)
+
+        print(access_token_response)
+
+        return JsonResponse({"ok", access_token_response})
