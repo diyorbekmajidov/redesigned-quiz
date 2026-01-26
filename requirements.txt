@@ -13,3 +13,5 @@ gunicorn~=22.0
 
 redis~=5.0
 python-dotenv
+pillow
+django-jazzmin
