@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # Local apps
     'main',
-    'user',
+    'student',
 ]
 
 MIDDLEWARE = [
@@ -146,12 +146,19 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
     "icons": {
-        'auth': "fas fa-users-cog",
-        "auth.user": "fas fa-user",
+        'student': "fas fa-users-cog",
+        "student.Student": "fas fa-user",
         "auth.Group": "fas fa-users",
-        "user.Student": "fas fa-user-graduate",
-        "user.StudentGirls": "fas fa-female",
-        "user.StudentGroups": "fas fa-users",
-
+        "student.Student": "fas fa-user-graduate",
+        "student.StudentGirls": "fas fa-female",
+        "student.StudentGroup": "fas fa-users",
+        "main.Question": "fas fa-question",
+        "main.Quiz": "fas fa-list",
+        "main.Result": "fas fa-chart-bar",
+        "main.QuestionText": "fas fa-file-alt",
+        "main.Option": "fas fa-check-circle",
+        "main.QuizAttempt": "fas fa-clock",
+        "main.UserResponse": "fas fa-comment",
+        "main.Result": "fas fa-trophy"
     }
 }

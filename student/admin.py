@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import User, Student, StudentGirls, StudentGroups
+from .models import Student, StudentGirls, StudentGroup
 
 class StudentAdmin(admin.ModelAdmin):
     list_display = ('student_name', 'student_id_number', 'email', 'faculty', 'level', 'studentStatus')
@@ -10,9 +10,9 @@ class StudentAdmin(admin.ModelAdmin):
 
 
 class StudentGirlsAdmin(admin.ModelAdmin):
-    list_display = ('place_of_birth', 'current_address', 'marital_status', 'pregancy_status')
+    list_display = ('place_of_birth', 'current_address', 'marital_status', 'pregnancy_status')
     search_fields = ('place_of_birth', 'current_address')
-    list_filter = ('marital_status', 'pregancy_status')
+    list_filter = ('marital_status', 'ethics_status', 'orphan_status')
 
 class StudentGroupsAdmin(admin.ModelAdmin):
     list_display = ('group_name', 'group_code')
@@ -21,5 +21,4 @@ class StudentGroupsAdmin(admin.ModelAdmin):
 
 admin.site.register(Student, StudentAdmin)
 admin.site.register(StudentGirls, StudentGirlsAdmin)
-admin.site.register(StudentGroups, StudentGroupsAdmin)
-admin.site.register(User)
+admin.site.register(StudentGroup, StudentGroupsAdmin)

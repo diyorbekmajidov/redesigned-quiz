@@ -7,7 +7,7 @@ import os
 
 load_dotenv()
 client_id = os.getenv('CLIENT_ID_HEMIS')
-client_secret = os.getenv('CLIENT_SECRET_HEMIS')
+client_secret = os.getenv('CLIENT_SECRET')
 redirect_uri = os.getenv('REDIRECT_URI_HEMIS')
 authorize_url = os.getenv('AUTHORIZE_URL_HEMIS')
 token_url = os.getenv('TOKEN_URL_HEMIS')
@@ -65,13 +65,14 @@ class AuthLoginView(View):
             resource_owner_url = resource_owner_url
         )
         authorization_url = client.get_authorization_url()
-
+        print(authorization_url, "<<< authorization_url")
         return HttpResponseRedirect(authorization_url)
     
 class AuthCallbackView(View):
     def get(self, request):
 
         code = request.GET.get('code')
+        print(code, "<<< code")
         if code is None: return JsonResponse({'error': 'code is missing!'})
 
         client = oAuth2Client(
@@ -84,6 +85,15 @@ class AuthCallbackView(View):
         )
         access_token_response = client.get_access_token(code)
 
-        print(access_token_response)
+        print(access_token_response, "<<< access_token_response")
+        full_info = {}
+        if 'access_token' in access_token_response:
+            access_token = access_token_response['access_token']
+            user_details = client.get_user_details(access_token)
+            print(user_details, "<<< user_details")
+            full_info['details'] = user_details
+            full_info['token'] = access_token
+            student_gpa = user_details['data']['avg_gpa']
+            student_id = user_details['data']['student_id_number']
 
-        return JsonResponse({"ok", access_token_response})
+        return JsonResponse({"ok": access_token_response})
