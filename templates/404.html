@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Sahifa topilmadi - 404{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mx-auto text-center py-5">
+                <h1 class="display-1 fw-bold text-primary">404</h1>
+                <h2 class="mb-4">Sahifa topilmadi</h2>
+                <p class="lead text-muted mb-4">
+                    Kechirasiz, siz qidirayotgan sahifa mavjud emas yoki o'chirilgan.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house"></i> Bosh sahifa
+                    </a>
+                    <a href="{% url 'list' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-journals"></i> Testlar ro'yxati
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

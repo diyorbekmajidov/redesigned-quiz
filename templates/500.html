@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Server xatosi - 500{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 mx-auto text-center py-5">
+                <h1 class="display-1 fw-bold text-danger">500</h1>
+                <h2 class="mb-4">Server xatosi</h2>
+                <p class="lead text-muted mb-4">
+                    Kechirasiz, serverda texnik muammo yuz berdi. Tez orada tuzatiladi.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{% url 'index' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house"></i> Bosh sahifa
+                    </a>
+                    <button onclick="location.reload()" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-arrow-clockwise"></i> Qayta yuklash
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
