@@ -2,8 +2,29 @@ from django.db import models
 import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-# Create your models here.
+class StudentGroup(models.Model):
+    """Talabalar guruhi"""
+    group_name = models.CharField(max_length=56, verbose_name="Guruh nomi")
+    group_code = models.CharField(max_length=56, unique=True, verbose_name="Guruh kodi")
+    group_faculty = models.CharField(max_length=56, verbose_name="Fakultet")
+    group_level = models.CharField(max_length=56, verbose_name="Kurs")
+    group_year = models.CharField(max_length=56, verbose_name="O'quv yili")
+    education_form = models.CharField(max_length=56, verbose_name="Ta'lim shakli")
+    education_lang = models.CharField(max_length=56, verbose_name="Ta'lim tili")
+    
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        verbose_name = "Guruh"
+        verbose_name_plural = "Guruhlar"
+        ordering = ['group_name']
+
+    def __str__(self):
+        return f"{self.group_name} ({self.group_code})"
+    
+    def get_student_count(self):
+        return self.students.count()
 class Student(models.Model):
     id = models.UUIDField(
         primary_key=True,
@@ -12,7 +33,7 @@ class Student(models.Model):
     )
     student_name = models.CharField(max_length=56, blank=True, null=True, verbose_name="Talaba_Ismi")
     phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
-    student_imeg = models.ImageField(upload_to='media/', verbose_name="rasm")
+    student_imeg = models.ImageField(upload_to='media/', blank=True, null=True, verbose_name="rasm")
     student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
     email = models.CharField(max_length=86)
     passport_number = models.CharField(max_length=12, verbose_name="passport raqami")
@@ -22,6 +43,16 @@ class Student(models.Model):
     faculty = models.CharField(max_length=86, verbose_name="fakultet")
     level = models.CharField(max_length=86, verbose_name="kurs")
     avg_gpa = models.CharField(max_length=86, verbose_name="Gpa-bali")
+    education_type = models.CharField(max_length=86, verbose_name="ta'lim-turi")
+    gender = models.CharField(max_length=56, verbose_name="jinsi")
+    semester = models.CharField(max_length=56, verbose_name="semestr")
+
+    group = models.ForeignKey(
+        StudentGroup,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='students'
+    )
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_update = models.DateTimeField(auto_now=True)
@@ -107,30 +138,6 @@ class StudentGirls(models.Model):
         return f"{self.student.student_name} - Qiz talaba"
     
     
-class StudentGroup(models.Model):
-    """Talabalar guruhi"""
-    group_name = models.CharField(max_length=56, verbose_name="Guruh nomi")
-    group_code = models.CharField(max_length=56, unique=True, verbose_name="Guruh kodi")
-    group_faculty = models.CharField(max_length=56, verbose_name="Fakultet")
-    group_level = models.CharField(max_length=56, verbose_name="Kurs")
-    group_year = models.CharField(max_length=56, verbose_name="O'quv yili")
-    
-    # ManyToMany - bir talaba bir nechta guruhda bo'lishi mumkin
-    students = models.ManyToManyField(Student, related_name='student_groups', blank=True)
-    
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Guruh"
-        verbose_name_plural = "Guruhlar"
-        ordering = ['group_name']
-
-    def __str__(self):
-        return f"{self.group_name} ({self.group_code})"
-    
-    def get_student_count(self):
-        return self.students.count()
 
 class Tutor(models.Model):
     pass
