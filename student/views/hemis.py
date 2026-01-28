@@ -1,3 +1,6 @@
+"""
+Yangilangan OAuth Views - Session Management bilan
+"""
 from django.views import View
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
@@ -8,9 +11,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-# Logging sozlash
 logger = logging.getLogger(__name__)
-
 load_dotenv()
 
 # HEMIS OAuth2 sozlamalari
@@ -32,12 +33,9 @@ class OAuth2Client:
         self.authorize_url = authorize_url
         self.token_url = token_url
         self.resource_owner_url = resource_owner_url
-        
-        # Parametrlarni tekshirish
         self._validate_config()
     
     def _validate_config(self):
-        """Konfiguratsiyani tekshirish"""
         required = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -54,7 +52,6 @@ class OAuth2Client:
             )
     
     def get_authorization_url(self, state=None):
-        """Authorization URL yaratish"""
         payload = {
             'client_id': self.client_id,
             'redirect_uri': self.redirect_uri,
@@ -65,11 +62,10 @@ class OAuth2Client:
             payload['state'] = state
         
         url = f"{self.authorize_url}?{urlencode(payload)}"
-        logger.info(f"Authorization URL yaratildi: {url}")
+        logger.info(f"Authorization URL yaratildi")
         return url
     
     def get_access_token(self, auth_code):
-        """Authorization code orqali access token olish"""
         payload = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -79,45 +75,29 @@ class OAuth2Client:
         }
         
         try:
-            logger.info("Access token so'ralmoqda...")
-            response = requests.post(
-                self.token_url, 
-                data=payload,
-                timeout=10
-            )
+            response = requests.post(self.token_url, data=payload, timeout=10)
             response.raise_for_status()
-            
             data = response.json()
             logger.info("Access token muvaffaqiyatli olindi")
             return data
-            
         except requests.exceptions.RequestException as e:
             logger.error(f"Access token olishda xatolik: {e}")
             return {'error': str(e)}
     
     def get_user_details(self, access_token):
-        """Access token orqali foydalanuvchi ma'lumotlarini olish"""
         headers = {'Authorization': f'Bearer {access_token}'}
         
         try:
-            logger.info("Foydalanuvchi ma'lumotlari so'ralmoqda...")
-            response = requests.get(
-                self.resource_owner_url, 
-                headers=headers,
-                timeout=10
-            )
+            response = requests.get(self.resource_owner_url, headers=headers, timeout=10)
             response.raise_for_status()
-            
             data = response.json()
             logger.info("Foydalanuvchi ma'lumotlari olindi")
             return data
-            
         except requests.exceptions.RequestException as e:
             logger.error(f"Foydalanuvchi ma'lumotlarini olishda xatolik: {e}")
             return {'error': str(e)}
     
     def refresh_access_token(self, refresh_token):
-        """Access token'ni yangilash"""
         payload = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -126,14 +106,9 @@ class OAuth2Client:
         }
         
         try:
-            response = requests.post(
-                self.token_url, 
-                data=payload,
-                timeout=10
-            )
+            response = requests.post(self.token_url, data=payload, timeout=10)
             response.raise_for_status()
             return response.json()
-            
         except requests.exceptions.RequestException as e:
             logger.error(f"Token yangilashda xatolik: {e}")
             return {'error': str(e)}
@@ -144,7 +119,6 @@ class AuthLoginView(View):
     
     def get(self, request):
         try:
-            # OAuth2 client yaratish
             client = OAuth2Client(
                 client_id=CLIENT_ID,
                 client_secret=CLIENT_SECRET,
@@ -154,12 +128,10 @@ class AuthLoginView(View):
                 resource_owner_url=RESOURCE_OWNER_URL
             )
             
-            # State parametri (CSRF himoyasi uchun)
             import secrets
             state = secrets.token_urlsafe(32)
             request.session['oauth_state'] = state
             
-            # Authorization URL olish
             authorization_url = client.get_authorization_url(state=state)
             logger.info(f"Foydalanuvchi HEMIS'ga yo'naltirilmoqda")
             
@@ -171,7 +143,6 @@ class AuthLoginView(View):
                 'error': 'OAuth2 konfiguratsiyasi to\'liq emas',
                 'message': str(e)
             }, status=500)
-        
         except Exception as e:
             logger.error(f"Kutilmagan xatolik: {e}")
             return JsonResponse({
@@ -181,7 +152,7 @@ class AuthLoginView(View):
 
 
 class AuthCallbackView(View):
-    """HEMIS'dan qaytish callback"""
+    """HEMIS'dan qaytish callback - SESSION BILAN"""
     
     def get(self, request):
         code = request.GET.get('code')
@@ -190,24 +161,19 @@ class AuthCallbackView(View):
         
         if error:
             logger.error(f"HEMIS xatolik qaytardi: {error}")
-            return JsonResponse({
-                'error': 'Avtorizatsiya xatolik',
-                'message': error,
-                'description': request.GET.get('error_description', '')
-            }, status=400)
+            return self._error_response(
+                'Avtorizatsiya xatolik',
+                error,
+                request.GET.get('error_description', '')
+            )
         
         if not code:
-            logger.error("Authorization code topilmadi")
-            return JsonResponse({
-                'error': 'Authorization code topilmadi'
-            }, status=400)
+            return self._error_response('Authorization code topilmadi')
         
         saved_state = request.session.get('oauth_state')
         if saved_state and saved_state != state:
-            logger.error("State parametri mos kelmadi (CSRF hujum?)")
-            return JsonResponse({
-                'error': 'Xavfsizlik xatosi: state mos kelmadi'
-            }, status=400)
+            logger.error("State parametri mos kelmadi")
+            return self._error_response('Xavfsizlik xatosi: state mos kelmadi')
         
         try:
             client = OAuth2Client(
@@ -219,157 +185,255 @@ class AuthCallbackView(View):
                 resource_owner_url=RESOURCE_OWNER_URL
             )
             
-            logger.info(f"Authorization code bilan token so'ralmoqda")
+            # Token olish
             token_response = client.get_access_token(code)
             
             if 'error' in token_response:
-                logger.error(f"Token olishda xatolik: {token_response['error']}")
-                return JsonResponse({
-                    'error': 'Token olishda xatolik',
-                    'message': token_response['error']
-                }, status=400)
+                return self._error_response('Token olishda xatolik', token_response['error'])
             
             access_token = token_response.get('access_token')
             if not access_token:
-                logger.error("Access token topilmadi")
-                return JsonResponse({
-                    'error': 'Access token topilmadi'
-                }, status=400)
+                return self._error_response('Access token topilmadi')
             
+            # User ma'lumotlari
             user_details = client.get_user_details(access_token)
-            student =self._get_or_create_student(user_details)
-            self._get_or_create_student_girl(user_details, student)
-
             
             if 'error' in user_details:
-                logger.error(f"Foydalanuvchi ma'lumotlari olishda xatolik: {user_details['error']}")
-                return JsonResponse({
-                    'error': 'Foydalanuvchi ma\'lumotlari olishda xatolik',
-                    'message': user_details['error']
-                }, status=400)
+                return self._error_response(
+                    'Foydalanuvchi ma\'lumotlari olishda xatolik',
+                    user_details['error']
+                )
             
-            request.session['access_token'] = access_token
-            request.session['refresh_token'] = token_response.get('refresh_token')
-            request.session['user_details'] = user_details
+            # Student yaratish/yangilash
+            student = self._get_or_create_student(user_details)
+            self._get_or_create_student_girl(user_details, student)
+            
+            # ⭐ SESSION YARATISH - BU ENG MUHIM QISM!
+            from UserSession.models import UserSession, LoginHistory
+            
+            # Eski sessionlarni tozalash
+            UserSession.cleanup_expired(days=7)
+            
+            # Yangi session yaratish
+            user_session = UserSession.get_or_create_session(
+                student=student,
+                request=request,
+                token_data=token_response
+            )
+            
+            # Django session'ga qo'shish (optional, lekin qulaylik uchun)
+            request.session['student_id'] = str(student.id)
+            request.session['user_session_id'] = user_session.id
+            
+            # Login tarixiga yozish
+            LoginHistory.objects.create(
+                student=student,
+                session=user_session,
+                ip_address=UserSession._get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                success=True
+            )
             
             # State'ni tozalash
             if 'oauth_state' in request.session:
                 del request.session['oauth_state']
             
-            logger.info(f"Foydalanuvchi muvaffaqiyatli tizimga kirdi: {user_details.get('email')}")
+            logger.info(f"Talaba tizimga kirdi: {student.student_name}")
             
-            return JsonResponse({
-                'success': True,
-                'message': 'Muvaffaqiyatli tizimga kirdingiz',
-                'user': user_details,
-                'token': {
-                    'access_token': access_token,
-                    'token_type': token_response.get('token_type'),
-                    'expires_in': token_response.get('expires_in')
-                }
-            })
+            # Dashboard'ga redirect
+            return redirect('student:dashboard')
             
         except ValueError as e:
             logger.error(f"Konfiguratsiya xatosi: {e}")
-            return JsonResponse({
-                'error': 'OAuth2 konfiguratsiyasi to\'liq emas',
-                'message': str(e)
-            }, status=500)
-        
+            return self._error_response('OAuth2 konfiguratsiyasi to\'liq emas', str(e))
         except Exception as e:
             logger.error(f"Kutilmagan xatolik: {e}", exc_info=True)
-            return JsonResponse({
-                'error': 'Tizimda xatolik yuz berdi',
-                'message': str(e)
-            }, status=500)
-
-    def _get_or_create_student(self, user_details, student_group=None):
-        """HEMIS ma'lumotlaridan Student yaratish yoki olish"""
+            
+            # Xatolikli login'ni yozish
+            try:
+                from UserSession.models import LoginHistory
+                if 'student' in locals():
+                    LoginHistory.objects.create(
+                        student=student,
+                        ip_address=UserSession._get_client_ip(request),
+                        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                        success=False,
+                        failure_reason=str(e)
+                    )
+            except:
+                pass
+            
+            return self._error_response('Tizimda xatolik yuz berdi', str(e))
+    
+    def _error_response(self, error, message='', description=''):
+        """Xatolik response'i"""
+        return JsonResponse({
+            'error': error,
+            'message': message,
+            'description': description
+        }, status=400)
+    
+    def _get_or_create_student(self, user_details):
+        """Student yaratish yoki yangilash"""
         from student.models import Student, StudentGroup
         
-        student_id_number = user_details.get('student_id_number') or user_details.get('student_id')
-
-        data = user_details['data']
+        data = user_details.get('data', {})
         group_data = user_details.get('groups', [])
-
-        group, _ = StudentGroup.objects.get_or_create(
-            group_code=group_data[0]['id'] if group_data else 'Unknown Group',
-            defaults={
-                'group_name': group_data[0]['name'] if group_data else 'Unknown Group',
-                'group_faculty': data['faculty']['name'],
-                'group_level': data['level']['name'],
-                'group_code': group_data[0]['id'] if group_data else 'N/A',
-                'group_year': data['semester']['education_year']['name'],
-                'education_form': group_data[0]['education_form']['name'] if group_data else 'N/A',
-                'education_lang': group_data[0]['education_lang']['name'] if group_data else 'N/A',
-            }
-        )
         
-        student, created = Student.objects.get_or_create(
+        # Guruh yaratish/yangilash
+        group = None
+        if group_data:
+            group, _ = StudentGroup.objects.get_or_create(
+                group_code=group_data[0].get('id', 'Unknown'),
+                defaults={
+                    'group_name': group_data[0].get('name', 'Unknown Group'),
+                    'faculty': data.get('faculty', {}).get('name', ''),
+                    'level': data.get('level', {}).get('name', ''),
+                    'academic_year': data.get('semester', {}).get('education_year', {}).get('name', ''),
+                }
+            )
+        
+        # Student yaratish/yangilash
+        student_id_number = user_details.get('student_id_number') or data.get('student_id_number', '')
+        
+        student, created = Student.objects.update_or_create(
             student_id_number=student_id_number,
             defaults={
-                'student_name': data['full_name'],
-                'email': data['email'],
-                'phone_number': data,
-                'student_id_number': user_details.get('student_id_number', ''),
-                'passport_number': user_details.get('passport_number', ''),
-                'birth_date': user_details.get('birth_date', ''),
-                'student_imeg': user_details.get('picture_full', ''),
-                'faculty': data['faculty']['name'],
-                'level': data['level']['name'],
-                'paymentForm': data['paymentForm']['name'],
-                'studentStatus': data['studentStatus']['name'],
-                'avg_gpa': data.get('avg_gpa', ''),
-                'education_type': data['educationType']['name'],
-                "gender": data['gender']['name'],
-                "semester": data['semester']['name'],
-                'group': group,
+                'student_name': data.get('full_name', ''),
+                'email': data.get('email', ''),
+                'phone_number': data.get('phone', ''),
+                'passport_number': data.get('passport_number', ''),
+                'birth_date': data.get('birth_date', '2000-01-01'),
+                'faculty': data.get('faculty', {}).get('name', ''),
+                'level': str(data.get('level', {}).get('code', '1')),
+                'payment_form': data.get('paymentForm', {}).get('name', 'contract'),
+                'student_status': data.get('studentStatus', {}).get('name', 'active'),
+                'avg_gpa': data.get('avg_gpa', 0),
+                'hemis_id': data.get('id', ''),
             }
         )
         
-        if created:
-            logger.info(f"Yangi talaba yaratildi: {student.student_name}")
-        else:
-            logger.info(f"Mavjud talaba topildi: {student.student_name}")
+        action = "yaratildi" if created else "yangilandi"
+        logger.info(f"Student {action}: {student.student_name}")
         
         return student
-        
+    
     def _get_or_create_student_girl(self, user_details, student):
+        """Qiz talaba qo'shimcha ma'lumotlari"""
         from student.models import StudentGirls
-        data = user_details['data']
-        girl, _ = StudentGirls.objects.get_or_create(
+        
+        data = user_details.get('data', {})
+        
+        # Faqat qiz talabalar uchun
+        gender = data.get('gender', {}).get('code')
+        if gender != 11:  # 11 = qiz (HEMIS'da)
+            return None
+        
+        girl, created = StudentGirls.objects.get_or_create(
             student=student,
             defaults={
-                'place_of_birth': data['address'],
-                'current_address': data['accommodation']['name'],
-                'district': data['district']['name'],
-                'province': data['province']['name'],
+                'place_of_birth': data.get('address', ''),
+                'current_address': data.get('accommodation', {}).get('name', ''),
             }
         )
-
-        if _:
-            logger.info(f"Yangi talaba yaratildi: {student.student_name}")
-        else:
-            logger.info(f"Mavjud talaba topildi: {student.student_name}")
+        
+        action = "yaratildi" if created else "topildi"
+        logger.info(f"StudentGirl {action}: {student.student_name}")
         
         return girl
+
 
 class LogoutView(View):
     """Tizimdan chiqish"""
     
     def get(self, request):
-        request.session.flush()
-        logger.info("Foydalanuvchi tizimdan chiqdi")
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Tizimdan chiqdingiz'
-        })
-    
+        try:
+            # UserSession'ni deaktivatsiya qilish
+            student_id = request.session.get('student_id')
+            user_session_id = request.session.get('user_session_id')
+            
+            if user_session_id:
+                from UserSession.models import UserSession, LoginHistory
+                
+                try:
+                    user_session = UserSession.objects.get(id=user_session_id)
+                    user_session.deactivate()
+                    
+                    # Login history'ni yangilash
+                    from django.utils import timezone
+                    LoginHistory.objects.filter(
+                        session=user_session,
+                        logout_time__isnull=True
+                    ).update(logout_time=timezone.now())
+                    
+                except UserSession.DoesNotExist:
+                    pass
+            
+            # Session tozalash
+            request.session.flush()
+            
+            logger.info("Foydalanuvchi tizimdan chiqdi")
+            
+            return redirect('main:home')
+            
+        except Exception as e:
+            logger.error(f"Logout xatolik: {e}")
+            request.session.flush()
+            return redirect('main:home')
 
-class StudentInfoDowland(View):
-    """Talaba ma'lumotlarini yuklab olish"""
+
+# ============ MIDDLEWARE ============
+
+class StudentAuthMiddleware:
+    """
+    Har bir request'da student'ning session'ini tekshirish middleware
+    """
     
-    def get(self, request):
-        access_token = request.session.get('access_token')
-        pass
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        # Student'ni request'ga qo'shish
+        student_id = request.session.get('student_id')
+        user_session_id = request.session.get('user_session_id')
+        
+        request.student = None
+        request.user_session = None
+        
+        if student_id and user_session_id:
+            try:
+                from UserSession.models import UserSession
+                from student.models import Student
+                
+                # UserSession olish
+                user_session = UserSession.objects.select_related('student').get(
+                    id=user_session_id,
+                    is_active=True
+                )
+                
+                # Token hali ham validmi?
+                if not user_session.is_valid():
+                    # Token muddati tugagan, refresh qilib ko'rish
+                    if user_session.refresh_if_needed():
+                        user_session.refresh_from_db()
+                    else:
+                        # Refresh ham muvaffaqiyatsiz, logout
+                        request.session.flush()
+                        return self.get_response(request)
+                
+                # Student va session'ni request'ga qo'shish
+                request.student = user_session.student
+                request.user_session = user_session
+                
+                # Activity'ni yangilash (har 5 daqiqada)
+                from django.utils import timezone
+                from datetime import timedelta
+                if timezone.now() - user_session.last_activity > timedelta(minutes=5):
+                    user_session.update_activity()
+                
+            except (UserSession.DoesNotExist, Student.DoesNotExist):
+                # Session topilmadi, tozalash
+                request.session.flush()
+        
+        response = self.get_response(request)
+        return response
