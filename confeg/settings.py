@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'student.middleware.StudentAuthMiddleware'
 ]
 
 ROOT_URLCONF = 'confeg.urls'
@@ -160,6 +161,8 @@ JAZZMIN_SETTINGS = {
         "main.Option": "fas fa-check-circle",
         "main.QuizAttempt": "fas fa-clock",
         "main.UserResponse": "fas fa-comment",
-        "main.Result": "fas fa-trophy"
+        "main.Result": "fas fa-trophy",
+        "UserSession.UserSession": "fas fa-user-shield",
+        "UserSession.LoginHistory": "fas fa-history",
     }
 }

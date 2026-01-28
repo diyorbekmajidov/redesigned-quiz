@@ -241,7 +241,7 @@ class AuthCallbackView(View):
             logger.info(f"Talaba tizimga kirdi: {student.student_name}")
             
             # Dashboard'ga redirect
-            return redirect('student:dashboard')
+            return redirect('dashboard')
             
         except ValueError as e:
             logger.error(f"Konfiguratsiya xatosi: {e}")
