@@ -33,7 +33,7 @@ class Student(models.Model):
     )
     student_name = models.CharField(max_length=56, blank=True, null=True, verbose_name="Talaba_Ismi")
     phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
-    student_imeg = models.ImageField(upload_to='media/', blank=True, null=True, verbose_name="rasm")
+    student_imeg = models.URLField(blank=True, null=True)
     student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
     email = models.CharField(max_length=86)
     passport_number = models.CharField(max_length=12, verbose_name="passport raqami")
@@ -91,6 +91,8 @@ class StudentGirls(models.Model):
     
     place_of_birth = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tug'ilgan joyi")
     current_address = models.CharField(max_length=256, blank=True, null=True, verbose_name="Hozirgi manzili")
+    district = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tuman")
+    province = models.CharField(max_length=100, blank=True, null=True, verbose_name="Viloyat")
     
     marital_status = models.CharField(
         max_length=56, 

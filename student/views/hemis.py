@@ -237,7 +237,8 @@ class AuthCallbackView(View):
                 }, status=400)
             
             user_details = client.get_user_details(access_token)
-            self._get_or_create_student(user_details)
+            student =self._get_or_create_student(user_details)
+            self._get_or_create_student_girl(user_details, student)
 
             
             if 'error' in user_details:
@@ -332,13 +333,31 @@ class AuthCallbackView(View):
             logger.info(f"Mavjud talaba topildi: {student.student_name}")
         
         return student
-    
+        
+    def _get_or_create_student_girl(self, user_details, student):
+        from student.models import StudentGirls
+        data = user_details['data']
+        girl, _ = StudentGirls.objects.get_or_create(
+            student=student,
+            defaults={
+                'place_of_birth': data['address'],
+                'current_address': data['accommodation']['name'],
+                'district': data['district']['name'],
+                'province': data['province']['name'],
+            }
+        )
+
+        if _:
+            logger.info(f"Yangi talaba yaratildi: {student.student_name}")
+        else:
+            logger.info(f"Mavjud talaba topildi: {student.student_name}")
+        
+        return girl
 
 class LogoutView(View):
     """Tizimdan chiqish"""
     
     def get(self, request):
-        # Session'ni tozalash
         request.session.flush()
         logger.info("Foydalanuvchi tizimdan chiqdi")
         
