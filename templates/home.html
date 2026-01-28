@@ -1,11 +1,693 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Psixologik Test Platformasi - Bosh sahifa{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 100px 0 80px;
+        position: relative;
+        overflow: hidden;
+    }
     
-</body>
-</html>
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,165.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+        background-size: cover;
+        opacity: 0.3;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+    }
+    
+    .hero-buttons .btn {
+        padding: 15px 40px;
+        font-size: 1.1rem;
+        border-radius: 50px;
+        margin: 0 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .hero-image {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    /* Features Section */
+    .features-section {
+        padding: 80px 0;
+        background: #f8f9fa;
+    }
+    
+    .feature-card {
+        background: white;
+        border-radius: 15px;
+        padding: 40px 30px;
+        height: 100%;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--primary-color);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin-bottom: 20px;
+    }
+    
+    /* How it Works */
+    .how-it-works {
+        padding: 80px 0;
+        background: white;
+    }
+    
+    .step-item {
+        position: relative;
+        padding-left: 100px;
+        margin-bottom: 60px;
+    }
+    
+    .step-number {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        color: white;
+        box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+    }
+    
+    .step-item::before {
+        content: '';
+        position: absolute;
+        left: 35px;
+        top: 70px;
+        width: 2px;
+        height: calc(100% + 30px);
+        background: linear-gradient(to bottom, var(--primary-color), transparent);
+    }
+    
+    .step-item:last-child::before {
+        display: none;
+    }
+    
+    /* Requirements */
+    .requirements-section {
+        padding: 80px 0;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    .requirement-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        transition: all 0.3s;
+    }
+    
+    .requirement-card:hover {
+        transform: translateX(10px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .requirement-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-right: 20px;
+    }
+    
+    /* Stats Section */
+    .stats-section {
+        padding: 60px 0;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+        padding: 80px 0;
+        background: white;
+    }
+    
+    .cta-card {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        border-radius: 20px;
+        padding: 60px 40px;
+        text-align: center;
+        color: white;
+    }
+    
+    .cta-card h2 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+    
+    .cta-card p {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        opacity: 0.9;
+    }
+    
+    /* FAQ Section */
+    .faq-section {
+        padding: 80px 0;
+        background: #f8f9fa;
+    }
+    
+    .faq-item {
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+    
+    .faq-question {
+        padding: 20px 25px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+    }
+    
+    .faq-question:hover {
+        background: #f8f9fa;
+    }
+    
+    .faq-answer {
+        padding: 0 25px;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+    
+    .faq-item.active .faq-answer {
+        padding: 20px 25px;
+        max-height: 500px;
+    }
+    
+    .faq-icon {
+        transition: transform 0.3s;
+    }
+    
+    .faq-item.active .faq-icon {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-7 hero-content">
+                <h1 class="hero-title">Psixologik Test Platformasi</h1>
+                <p class="hero-subtitle">
+                    O'zbekiston talabalari uchun zamonaviy psixologik baholash tizimi
+                </p>
+                <p class="lead mb-4">
+                    GPA va ijtimoiy faolligingizni baholang, professional psixologik testlardan o'ting 
+                    va o'z imkoniyatlaringizni kashf eting!
+                </p>
+                <div class="hero-buttons">
+                    <a href="{% url 'login' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Tizimga kirish
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-play-circle me-2"></i>
+                        Qanday ishlaydi?
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="hero-image">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+                        <circle cx="250" cy="250" r="200" fill="rgba(255,255,255,0.1)"/>
+                        <circle cx="250" cy="250" r="150" fill="rgba(255,255,255,0.2)"/>
+                        <circle cx="250" cy="250" r="100" fill="rgba(255,255,255,0.3)"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-6 stat-item">
+                <div class="stat-number" data-count="10000">0</div>
+                <div class="stat-label">Faol talabalar</div>
+            </div>
+            <div class="col-md-3 col-6 stat-item">
+                <div class="stat-number" data-count="50">0</div>
+                <div class="stat-label">Professional testlar</div>
+            </div>
+            <div class="col-md-3 col-6 stat-item">
+                <div class="stat-number" data-count="25">0</div>
+                <div class="stat-label">Universitet</div>
+            </div>
+            <div class="col-md-3 col-6 stat-item">
+                <div class="stat-number" data-count="95">0</div>
+                <div class="stat-label">Mamnunlik %</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">Platformaning Afzalliklari</h2>
+            <p class="lead text-muted">Nima uchun bizni tanlash kerak?</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4 class="mb-3">Professional Testlar</h4>
+                    <p class="text-muted">
+                        Psixolog mutaxassislar tomonidan ishlab chiqilgan ilmiy asoslangan testlar
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="mb-3">Batafsil Natijalar</h4>
+                    <p class="text-muted">
+                        Sizning shaxsiy xususiyatlaringiz va qobiliyatlaringiz to'g'risida to'liq tahlil
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4 class="mb-3">Xavfsizlik</h4>
+                    <p class="text-muted">
+                        Barcha ma'lumotlaringiz maxfiy va himoyalangan
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4 class="mb-3">24/7 Kirish</h4>
+                    <p class="text-muted">
+                        Istalgan vaqt va joydan testlarni topshiring
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <h4 class="mb-3">Sertifikat</h4>
+                    <p class="text-muted">
+                        Testlarni muvaffaqiyatli yakunlash uchun sertifikat
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4 class="mb-3">Professional Yordam</h4>
+                    <p class="text-muted">
+                        Psixolog mutaxassislardan maslahat olish imkoniyati
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How it Works -->
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">Qanday Ishlaydi?</h2>
+            <p class="lead text-muted">To'rtta oddiy qadamda testdan o'ting</p>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <h4 class="mb-3">Ro'yxatdan O'tish</h4>
+                    <p class="text-muted">
+                        HEMIS tizimi orqali tizimga kiring. Barcha ma'lumotlaringiz avtomatik yuklanadi.
+                    </p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <h4 class="mb-3">Test Tanlash</h4>
+                    <p class="text-muted">
+                        Mavjud testlar ro'yxatidan o'zingizga mos testni tanlang va boshlang.
+                    </p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <h4 class="mb-3">Testni Topshirish</h4>
+                    <p class="text-muted">
+                        Savollarga javob bering. Har bir test uchun belgilangan vaqt chegarasi mavjud.
+                    </p>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <h4 class="mb-3">Natijani Ko'rish</h4>
+                    <p class="text-muted">
+                        Test yakunlangandan keyin batafsil natijalaringiz bilan tanishing va tavsiyalar oling.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Requirements Section -->
+<section class="requirements-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">Kim Ishtirok Etishi Mumkin?</h2>
+            <p class="lead text-muted">Quyidagi talablarga javob beruvchi talabalar</p>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="requirement-card">
+                    <div class="d-flex align-items-start">
+                        <div class="requirement-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-2">Ta'lim Bosqichi</h5>
+                            <p class="text-muted mb-0">
+                                Bakalavriat yoki magistratura bosqichida kunduzgi ta'lim shaklida o'qiyotgan talabalar
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="requirement-card">
+                    <div class="d-flex align-items-start">
+                        <div class="requirement-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-2">GPA Ko'rsatkichi</h5>
+                            <p class="text-muted mb-0">
+                                O'rtacha o'zlashtirish ko'rsatkichi (GPA) 70 balldan yuqori bo'lgan talabalar
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="requirement-card">
+                    <div class="d-flex align-items-start">
+                        <div class="requirement-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-2">HEMIS Tizimi</h5>
+                            <p class="text-muted mb-0">
+                                HEMIS tizimida ro'yxatdan o'tgan va faol hisobga ega talabalar
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="requirement-card">
+                    <div class="d-flex align-items-start">
+                        <div class="requirement-icon">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-2">Ta'lim Muassasasi</h5>
+                            <p class="text-muted mb-0">
+                                O'zbekiston davlat oliy ta'lim muassasalarida o'qiyotgan talabalar
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">Ko'p So'raladigan Savollar</h2>
+            <p class="lead text-muted">Sizni qiziqtirgan savollarga javoblar</p>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Testlar qancha vaqt davom etadi?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-muted mb-0">
+                            Har bir test uchun o'rtacha 20-30 daqiqa vaqt beriladi. Test boshlangandan keyin 
+                            timer avtomatik ishga tushadi va qolgan vaqtni ko'rsatib turadi.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Natijalarni qanday ko'rish mumkin?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-muted mb-0">
+                            Test yakunlangandan so'ng darhol natijalaringizni ko'rishingiz mumkin. 
+                            Batafsil tahlil, grafiklar va tavsiyalar bilan tanishishingiz mumkin.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Testni qayta topshirish mumkinmi?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-muted mb-0">
+                            Ha, ko'pchilik testlarni qayta topshirish mumkin. Lekin ba'zi testlar faqat 
+                            bir marta topshirilishi mumkin.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Ma'lumotlarim xavfsizmi?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-muted mb-0">
+                            Ha, barcha ma'lumotlaringiz maxfiy va himoyalangan. Biz zamonaviy xavfsizlik 
+                            standartlaridan foydalanamiz.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Sertifikat berilad mi?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-muted mb-0">
+                            Ha, testlarni muvaffaqiyatli yakunlagan talabalar elektron sertifikat olishadi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-card">
+            <h2>Bugun Boshlang!</h2>
+            <p>
+                O'z imkoniyatlaringizni kashf eting va professional psixologik testlardan o'ting
+            </p>
+            <a href="{% url 'login' %}" class="btn btn-light btn-lg">
+                <i class="fas fa-rocket me-2"></i>
+                Ro'yxatdan O'tish
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// FAQ Toggle
+function toggleFaq(element) {
+    const faqItem = element.closest('.faq-item');
+    const wasActive = faqItem.classList.contains('active');
+    
+    // Close all
+    document.querySelectorAll('.faq-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Open clicked if it wasn't active
+    if (!wasActive) {
+        faqItem.classList.add('active');
+    }
+}
+
+// Counter Animation
+function animateCounter(element) {
+    const target = parseInt(element.dataset.count);
+    const duration = 2000;
+    const step = target / (duration / 16);
+    let current = 0;
+    
+    const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+            element.textContent = target.toLocaleString();
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current).toLocaleString();
+        }
+    }, 16);
+}
+
+// Intersection Observer for counters
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const counters = entry.target.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                if (counter.textContent === '0') {
+                    animateCounter(counter);
+                }
+            });
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.5 });
+
+// Observe stats section
+document.addEventListener('DOMContentLoaded', () => {
+    const statsSection = document.querySelector('.stats-section');
+    if (statsSection) {
+        observer.observe(statsSection);
+    }
+    
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

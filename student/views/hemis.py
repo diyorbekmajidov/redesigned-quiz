@@ -374,12 +374,12 @@ class LogoutView(View):
             
             logger.info("Foydalanuvchi tizimdan chiqdi")
             
-            return redirect('main:home')
+            return redirect('home')
             
         except Exception as e:
             logger.error(f"Logout xatolik: {e}")
             request.session.flush()
-            return redirect('main:home')
+            return redirect('home')
 
 
 # ============ MIDDLEWARE ============
