@@ -60,6 +60,12 @@ class Student(models.Model):
     def __str__(self):
         return f''
     
+    def get_level_display(self):
+        return self.level
+    
+    def get_group_name(self):
+        return self.group.group_name if self.group else "No Group"  
+    
     
 class StudentGirls(models.Model):
     """Qiz talabalar uchun qo'shimcha ma'lumotlar"""

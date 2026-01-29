@@ -223,7 +223,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" 
                                role="button" data-bs-toggle="dropdown">
-                                <div class="user-avatar">
+                                <div class="user-avatar"
                                     {{ request.student.student_name|first|upper }}
                                 </div>
                                 <span>{{ request.student.student_name|truncatewords:2 }}</span>
