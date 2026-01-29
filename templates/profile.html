@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil - {{ student.student_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row g-4">
+        <!-- Profile Info -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="avatar mb-3">
+                        {% if student.student_image %}
+                            <img src="{{ student.student_image.url }}" class="rounded-circle" width="120">
+                        {% else %}
+                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 120px; height: 120px; font-size: 3rem;">
+                                {{ student.student_name|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h4>{{ student.student_name }}</h4>
+                    <p class="text-muted">{{ student.student_id_number }}</p>
+                    <div class="mt-3">
+                        <span class="badge bg-primary">{{ student.get_level_display }}</span>
+                        <span class="badge bg-success">GPA: {{ student.avg_gpa }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Tezkor Statistika</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Topshirilgan testlar:</span>
+                        <strong>{{ total_attempts }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>O'tgan testlar:</span>
+                        <strong class="text-success">{{ passed_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>O'rtacha ball:</span>
+                        <strong class="text-primary">{{ average_percentage }}%</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Info -->
+        <div class="col-lg-8">
+            <!-- Personal Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Shaxsiy Ma'lumotlar</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Email:</label>
+                            <p class="mb-0">{{ student.email }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Telefon:</label>
+                            <p class="mb-0">{{ student.phone_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Tug'ilgan sana:</label>
+                            <p class="mb-0">{{ student.birth_date }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Pasport:</label>
+                            <p class="mb-0">{{ student.passport_number }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Academic Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Ta'lim Ma'lumotlari</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Fakultet:</label>
+                            <p class="mb-0">{{ student.faculty }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Kurs:</label>
+                            <p class="mb-0">{{ student.get_level_display }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">To'lov shakli:</label>
+                            <p class="mb-0">{{ student.payment_form }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Holat:</label>
+                            <p class="mb-0">{{ student.student_status }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Groups -->
+            {% if groups %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Guruhlar</h5>
+                </div>
+                <div class="card-body">
+                    <span class="badge bg-info me-2 mb-2">{{ student.group }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Login History -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Login Tarixi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Sana</th>
+                                    <th>IP Manzil</th>
+                                    <th>Device</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for login in login_history %}
+                                <tr>
+                                    <td>{{ login.login_time|date:"d M Y H:i" }}</td>
+                                    <td>{{ login.ip_address }}</td>
+                                    <td><small class="text-muted">{{ login.user_agent|truncatewords:5 }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

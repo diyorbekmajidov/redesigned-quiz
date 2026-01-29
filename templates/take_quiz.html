@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load dict_extras %}
+
+{% block title %}{{ quiz.title }} - Test Topshirish{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fa;
+    }
+    
+    .quiz-header-fixed {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        padding: 15px 0;
+    }
+    
+    .quiz-container {
+        margin-top: 100px;
+        padding-bottom: 50px;
+    }
+    
+    .timer-display {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .timer-display.warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        animation: pulse 1s infinite;
+    }
+    
+    .timer-display.danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        animation: pulse 0.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .progress-info {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .question-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+    }
+    
+    .question-number {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    
+    .option-item {
+        background: #f8f9fa;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .option-item:hover {
+        border-color: var(--primary-color);
+        background: #f0f4ff;
+    }
+    
+    .option-item input[type="radio"] {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+    }
+    
+    .option-item.selected {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+        font-weight: 600;
+    }
+    
+    .question-navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        padding: 20px 0;
+        z-index: 1000;
+    }
+    
+    .nav-dots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .nav-dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .nav-dot:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .nav-dot.answered {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+    }
+    
+    .nav-dot.current {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .save-status {
+        font-size: 0.9rem;
+        color: var(--success-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Fixed Header -->
+<div class="quiz-header-fixed">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">{{ quiz.title }}</h5>
+                <small class="text-muted">{{ answered_count }}/{{ total_questions }} javob berilgan</small>
+            </div>
+            <div class="progress-info">
+                <div class="save-status" id="save-status"></div>
+                <div class="timer-display text-primary" 
+                     id="quiz-timer" 
+                     data-remaining-seconds="{{ remaining_time }}">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ remaining_time|floatformat:0|default:"0" }}:00</span>
+                </div>
+            </div>
+        </div>
+        <div class="progress mt-3" style="height: 5px;">
+            <div class="progress-bar bg-success" 
+                 id="progress-bar"
+                 style="width: {{ answered_count|floatformat:0 }}%"
+                 data-total="{{ total_questions }}"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Quiz Content -->
+<div class="container quiz-container">
+    <form method="post" id="quiz-form">
+        {% csrf_token %}
+        
+        {% for question in questions %}
+        <div class="question-card" id="question-{{ forloop.counter }}" 
+             {% if not forloop.first %}style="display: none;"{% endif %}>
+            <div class="question-number">{{ forloop.counter }}</div>
+            
+            <h4 class="mb-4">{{ question.question_text }}</h4>
+            
+            {% if question.score > 1 %}
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-star me-2"></i>
+                Bu savol uchun <strong>{{ question.score }} ball</strong> beriladi
+            </div>
+            {% endif %}
+            
+            <div class="options-container">
+                {% for option in question.options.all %}
+                <label class="option-item {% if responses|get_item:question.id == option.id %}selected{% endif %}">
+                    <input type="radio" 
+                           name="question_{{ question.id }}" 
+                           value="{{ option.id }}"
+                           {% if responses|get_item:question.id == option.id %}checked{% endif %}
+                           onchange="markAsAnswered({{ forloop.parentloop.counter }})">
+                    <span class="option-text">{{ option.option_text }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Navigation -->
+        <div class="question-navigation">
+            <div class="container">
+                <div class="nav-dots" id="nav-dots">
+                    {% for question in questions %}
+                    <div class="nav-dot {% if forloop.first %}current{% endif %} {% if responses|get_item:question.id %}answered{% endif %}"
+                         onclick="goToQuestion({{ forloop.counter }})"
+                         id="dot-{{ forloop.counter }}">
+                        {{ forloop.counter }}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" 
+                            id="prevBtn" onclick="previousQuestion()">
+                        <i class="fas fa-arrow-left me-2"></i>Oldingi
+                    </button>
+                    
+                    <div class="btn-group">
+                        <button type="submit" name="action" value="save" 
+                                class="btn btn-outline-primary">
+                            <i class="fas fa-save me-2"></i>Saqlash
+                        </button>
+                        <button type="button" class="btn btn-success" 
+                                data-bs-toggle="modal" data-bs-target="#submitModal">
+                            <i class="fas fa-check me-2"></i>Yakunlash
+                        </button>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" 
+                            id="nextBtn" onclick="nextQuestion()">
+                        Keyingi<i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Testni Yakunlash
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Testni yakunlagandan keyin o'zgartirib bo'lmaydi!
+                </div>
+                
+                <h6 class="mb-3">Statistika:</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <span id="answered-count">{{ answered_count }}</span> ta savol javob berilgan
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-times text-danger me-2"></i>
+                        <span id="unanswered-count">{{ total_questions|add:"-"|add:answered_count }}</span> ta javobsiz savol
+                    </li>
+                </ul>
+                
+                <p class="text-muted">
+                    Testni yakunlashni xohlaysizmi?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Bekor qilish
+                </button>
+                <button type="button" class="btn btn-success" onclick="submitQuiz()">
+                    <i class="fas fa-check me-2"></i>Ha, Yakunlash
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/quiz_timer.js' %}"></script>
+<script>
+let currentQuestion = 1;
+const totalQuestions = {{ total_questions }};
+
+function goToQuestion(num) {
+    // Hide all questions
+    document.querySelectorAll('.question-card').forEach(q => {
+        q.style.display = 'none';
+    });
+    
+    // Show selected question
+    document.getElementById(`question-${num}`).style.display = 'block';
+    
+    // Update nav dots
+    document.querySelectorAll('.nav-dot').forEach(dot => {
+        dot.classList.remove('current');
+    });
+    document.getElementById(`dot-${num}`).classList.add('current');
+    
+    currentQuestion = num;
+    updateButtons();
+}
+
+function nextQuestion() {
+    if (currentQuestion < totalQuestions) {
+        goToQuestion(currentQuestion + 1);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestion > 1) {
+        goToQuestion(currentQuestion - 1);
+    }
+}
+
+function updateButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    prevBtn.disabled = currentQuestion === 1;
+    nextBtn.textContent = currentQuestion === totalQuestions ? 'Yakunlash' : 'Keyingi';
+}
+
+function markAsAnswered(questionNum) {
+    document.getElementById(`dot-${questionNum}`).classList.add('answered');
+    updateProgressBar();
+}
+
+function updateProgressBar() {
+    const answered = document.querySelectorAll('.nav-dot.answered').length;
+    const percentage = (answered / totalQuestions) * 100;
+    document.getElementById('progress-bar').style.width = percentage + '%';
+    
+    // Update modal counts
+    document.getElementById('answered-count').textContent = answered;
+    document.getElementById('unanswered-count').textContent = totalQuestions - answered;
+}
+
+function submitQuiz() {
+    const form = document.getElementById('quiz-form');
+    const submitInput = document.createElement('input');
+    submitInput.type = 'hidden';
+    submitInput.name = 'action';
+    submitInput.value = 'submit';
+    form.appendChild(submitInput);
+    form.submit();
+}
+
+// Option selection styling
+document.querySelectorAll('.option-item input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // Remove selected class from all options in this question
+        this.closest('.options-container').querySelectorAll('.option-item').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        
+        // Add selected class to chosen option
+        this.closest('.option-item').classList.add('selected');
+    });
+});
+
+// Prevent accidental page leave
+window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+// Remove warning when submitting
+document.getElementById('quiz-form').addEventListener('submit', function() {
+    window.removeEventListener('beforeunload', arguments.callee);
+});
+
+// Initialize
+updateButtons();
+updateProgressBar();
+</script>
+{% endblock %}

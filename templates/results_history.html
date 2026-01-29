@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Natijalar Tarixi{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4"><i class="fas fa-history me-2"></i>Natijalar Tarixi</h2>
+    
+    <!-- Stats Summary -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>{{ total_tests }}</h3>
+                <p>Jami Testlar</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3 class="text-success">{{ passed_tests }}</h3>
+                <p>O'tgan</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3 class="text-danger">{{ failed_tests }}</h3>
+                <p>O'tmagan</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3 class="text-primary">{{ average_score }}%</h3>
+                <p>O'rtacha Ball</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Table -->
+    <div class="card">
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Sana</th>
+                        <th>Natija</th>
+                        <th>Holat</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.attempt.quiz.title }}</td>
+                        <td>{{ result.created_at|date:"d M Y" }}</td>
+                        <td>
+                            <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ result.percentage }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if result.passed %}
+                                <i class="fas fa-check text-success"></i> O'tdi
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i> O'tmadi
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'result' result.attempt.id %}" class="btn btn-sm btn-primary">
+                                Ko'rish
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

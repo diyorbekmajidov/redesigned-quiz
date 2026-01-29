@@ -279,7 +279,7 @@ class ResultAdmin(admin.ModelAdmin):
     list_display = [
         'student_name',
         'quiz_name', 
-        'percentage_display',
+        # 'percentage_display',
         'grade_display',
         'passed_display',
         'correct_answers', 
@@ -307,10 +307,15 @@ class ResultAdmin(admin.ModelAdmin):
     
     def percentage_display(self, obj):
         color = 'green' if obj.passed else 'red'
+        # return format_html(
+        #     '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
+        #     color, float(obj.percentage)
+        # )
         return format_html(
             '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-            color, obj.percentage
+            color, float(obj.percentage)
         )
+
     percentage_display.short_description = 'Foiz'
     
     def grade_display(self, obj):

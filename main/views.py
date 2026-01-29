@@ -96,16 +96,16 @@ class StudentProfileView(StudentLoginRequiredMixin, TemplateView):
             context['girl_details'] = student.girl_details
         
         # Guruhlar
-        context['groups'] = student.student_groups.all()
+        context['groups'] = student.group
         
         # Login tarixi
-        from main.models import LoginHistory
+        from UserSession.models import LoginHistory
         context['login_history'] = LoginHistory.objects.filter(
             student=student
         ).order_by('-login_time')[:10]
         
         # Faol sessionlar
-        from main.models import UserSession
+        from UserSession.models import UserSession
         context['active_sessions'] = UserSession.objects.filter(
             student=student,
             is_active=True
@@ -287,7 +287,7 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
         # Agar "Yakunlash" bosilgan bo'lsa
         if action == 'submit':
             attempt.complete_attempt()
-            return redirect('quiz:result', attempt_id=attempt.id)
+            return redirect('result', attempt_id=attempt.id)
         
         # Agar "Saqlash" bosilgan bo'lsa
         return JsonResponse({

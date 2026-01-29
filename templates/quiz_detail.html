@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} - Test Tafsilotlari{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+        margin-bottom: 40px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+        margin-right: 20px;
+    }
+    
+    .attempt-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-left: 4px solid;
+        transition: all 0.3s;
+    }
+    
+    .attempt-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateX(5px);
+    }
+    
+    .attempt-card.completed {
+        border-color: var(--success-color);
+    }
+    
+    .attempt-card.in_progress {
+        border-color: var(--warning-color);
+    }
+    
+    .attempt-card.expired {
+        border-color: var(--danger-color);
+    }
+    
+    .start-btn {
+        padding: 15px 50px;
+        font-size: 1.2rem;
+        border-radius: 50px;
+    }
+    
+    .rules-section {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 30px;
+        margin-top: 30px;
+    }
+    
+    .rule-item {
+        display: flex;
+        align-items-start;
+        margin-bottom: 15px;
+    }
+    
+    .rule-icon {
+        width: 30px;
+        height: 30px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Quiz Header -->
+<section class="quiz-detail-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold mb-3">{{ quiz.title }}</h1>
+                <p class="lead mb-0">{{ quiz.description }}</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                {% if current_attempt %}
+                    <a href="{% url 'take' quiz.id %}" 
+                       class="btn btn-warning btn-lg start-btn">
+                        <i class="fas fa-play me-2"></i>Davom ettirish
+                    </a>
+                {% else %}
+                    <button class="btn btn-light btn-lg start-btn" 
+                            data-bs-toggle="modal" data-bs-target="#startModal">
+                        <i class="fas fa-play-circle me-2"></i>Boshlash
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container mb-5">
+    <div class="row g-4">
+        <!-- Quiz Info -->
+        <div class="col-lg-8">
+            <!-- Main Info Card -->
+            <div class="info-card mb-4">
+                <h4 class="mb-4">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    Test Haqida
+                </h4>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">Savollar Soni</h6>
+                        <p class="text-muted mb-0">{{ quiz.get_total_questions }} ta savol</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">Vaqt Chegarasi</h6>
+                        <p class="text-muted mb-0">{{ quiz.time_limit }} daqiqa</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">Maksimal Ball</h6>
+                        <p class="text-muted mb-0">{{ quiz.get_total_score }} ball</p>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">O'tish Bali</h6>
+                        <p class="text-muted mb-0">{{ quiz.passing_score }}% va undan yuqori</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Best Result -->
+            {% if best_result %}
+            <div class="info-card mb-4">
+                <h4 class="mb-4">
+                    <i class="fas fa-trophy me-2 text-warning"></i>
+                    Eng Yaxshi Natija
+                </h4>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="mb-0 {% if best_result.passed %}text-success{% else %}text-danger{% endif %}">
+                            {{ best_result.percentage }}%
+                        </h2>
+                        <small class="text-muted">
+                            {{ best_result.correct_answers }}/{{ best_result.total_questions }} to'g'ri javob
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge {% if best_result.passed %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                            {% if best_result.passed %}
+                                <i class="fas fa-check me-1"></i>O'tdingiz
+                            {% else %}
+                                <i class="fas fa-times me-1"></i>O'tmadingiz
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="progress" style="height: 15px;">
+                    <div class="progress-bar {% if best_result.passed %}bg-success{% else %}bg-danger{% endif %}" 
+                         style="width: {{ best_result.percentage }}%">
+                        {{ best_result.percentage }}%
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Previous Attempts -->
+            {% if attempts %}
+            <div class="info-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-history me-2 text-info"></i>
+                    Urinishlar Tarixi ({{ total_attempts }} ta)
+                </h4>
+                
+                {% for attempt in attempts %}
+                <div class="attempt-card {{ attempt.status }}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                Urinish #{{ forloop.counter }}
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ attempt.started_at|date:"d M Y, H:i" }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            {% if attempt.status == 'completed' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Yakunlangan
+                                </span>
+                                {% if attempt.result %}
+                                <div class="mt-2">
+                                    <strong class="text-success">{{ attempt.result.percentage }}%</strong>
+                                </div>
+                                {% endif %}
+                            {% elif attempt.status == 'in_progress' %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock me-1"></i>Jarayonda
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times me-1"></i>Vaqti tugagan
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if attempt.status == 'completed' and attempt.result %}
+                    <div class="mt-3">
+                        <a href="{% url 'result' attempt.id %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i>Natijani ko'rish
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Rules -->
+            <div class="rules-section">
+                <h5 class="mb-4">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Test Qoidalari
+                </h5>
+                
+                <div class="rule-item">
+                    <div class="rule-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <strong>Vaqt chegarasi</strong>
+                        <p class="text-muted small mb-0">
+                            Test boshlangandan keyin {{ quiz.time_limit }} daqiqa vaqt beriladi
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <div class="rule-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div>
+                        <strong>Orqaga qaytish</strong>
+                        <p class="text-muted small mb-0">
+                            Test boshlangandan keyin to'xtatib bo'lmaydi
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <div class="rule-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <strong>Javoblar</strong>
+                        <p class="text-muted small mb-0">
+                            Har bir savolga faqat bitta javob tanlash mumkin
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <div class="rule-icon">
+                        <i class="fas fa-save"></i>
+                    </div>
+                    <div>
+                        <strong>Avtomatik saqlash</strong>
+                        <p class="text-muted small mb-0">
+                            Javoblaringiz avtomatik saqlanib turadi
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="rule-item">
+                    <div class="rule-icon">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <div>
+                        <strong>O'tish bali</strong>
+                        <p class="text-muted small mb-0">
+                            Testdan o'tish uchun kamida {{ quiz.passing_score }}% to'g'ri javob kerak
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Creator Info -->
+            <div class="info-card mt-4">
+                <h6 class="mb-3">Test Yaratuvchi</h6>
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="width: 50px; height: 50px; font-size: 1.5rem;">
+                        {{ quiz.created_by.username|first|upper }}
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">{{ quiz.created_by.get_full_name|default:quiz.created_by.username }}</h6>
+                        <small class="text-muted">
+                            {{ quiz.created_at|date:"d M Y" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Start Modal -->
+<div class="modal fade" id="startModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-play-circle me-2"></i>
+                    Testni Boshlash
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Diqqat!</strong> Test boshlangandan keyin to'xtatib bo'lmaydi.
+                </div>
+                
+                <h6 class="mb-3">Tayyormisiz?</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        {{ quiz.get_total_questions }} ta savolga javob berasiz
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        {{ quiz.time_limit }} daqiqa vaqt beriladi
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        {{ quiz.passing_score }}% o'tish bali talab qilinadi
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Bekor qilish
+                </button>
+                <a href="{% url 'take' quiz.id %}" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i>Testni Boshlash
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

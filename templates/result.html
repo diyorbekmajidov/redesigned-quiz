@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Test Natijasi - {{ attempt.quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+        text-align: center;
+    }
+    
+    .result-score {
+        font-size: 5rem;
+        font-weight: bold;
+        margin: 20px 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .result-status {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+    
+    .result-status.passed {
+        color: #10B981;
+    }
+    
+    .result-status.failed {
+        color: #EF4444;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 30px 0;
+    }
+    
+    .stat-box {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .stat-icon.correct { color: var(--success-color); }
+    .stat-icon.wrong { color: var(--danger-color); }
+    .stat-icon.unanswered { color: var(--warning-color); }
+    .stat-icon.time { color: var(--primary-color); }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .answer-review {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-left: 5px solid;
+    }
+    
+    .answer-review.correct {
+        border-color: var(--success-color);
+        background: #f0fdf4;
+    }
+    
+    .answer-review.wrong {
+        border-color: var(--danger-color);
+        background: #fef2f2;
+    }
+    
+    .answer-option {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    
+    .answer-option.selected {
+        background: #e0e7ff;
+        border: 2px solid var(--primary-color);
+    }
+    
+    .answer-option.correct {
+        background: #d1fae5;
+        border: 2px solid var(--success-color);
+    }
+    
+    .answer-option.wrong {
+        background: #fee2e2;
+        border: 2px solid var(--danger-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="result-header">
+    <div class="container">
+        <div class="result-status {% if result.passed %}passed{% else %}failed{% endif %}">
+            {% if result.passed %}
+                <i class="fas fa-check-circle"></i> Tabriklaymiz!
+            {% else %}
+                <i class="fas fa-times-circle"></i> Afsuski
+            {% endif %}
+        </div>
+        <h1 class="mb-3">{{ attempt.quiz.title }}</h1>
+        <div class="result-score">{{ result.percentage }}%</div>
+        <p class="lead">
+            {% if result.passed %}
+                Siz testdan muvaffaqiyatli o'tdingiz!
+            {% else %}
+                Siz testdan o'ta olmadingiz. Qayta urinib ko'ring!
+            {% endif %}
+        </p>
+    </div>
+</section>
+
+<div class="container my-5">
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-icon correct">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-value">{{ correct_count }}</div>
+            <div class="text-muted">To'g'ri Javoblar</div>
+        </div>
+        
+        <div class="stat-box">
+            <div class="stat-icon wrong">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-value">{{ wrong_count }}</div>
+            <div class="text-muted">Noto'g'ri Javoblar</div>
+        </div>
+        
+        <div class="stat-box">
+            <div class="stat-icon unanswered">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div class="stat-value">{{ unanswered_count }}</div>
+            <div class="text-muted">Javobsiz</div>
+        </div>
+        
+        <div class="stat-box">
+            <div class="stat-icon time">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-value">
+                {% widthratio attempt.time_taken 60 1 %}m
+            </div>
+            <div class="text-muted">Sarflangan Vaqt</div>
+        </div>
+    </div>
+    
+    <!-- Detailed Score -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-4">
+                <i class="fas fa-chart-bar me-2"></i>
+                Batafsil Ball
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Jami Savollar:</strong> {{ total_questions }}</p>
+                    <p><strong>To'g'ri Javoblar:</strong> {{ correct_count }}</p>
+                    <p><strong>Olingan Ball:</strong> {{ result.total_score }}/{{ result.max_score }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Foiz:</strong> {{ result.percentage }}%</p>
+                    <p><strong>O'tish Bali:</strong> {{ attempt.quiz.passing_score }}%</p>
+                    <p><strong>Baho:</strong> {{ result.get_grade }}</p>
+                </div>
+            </div>
+            <div class="progress mt-3" style="height: 25px;">
+                <div class="progress-bar {% if result.passed %}bg-success{% else %}bg-danger{% endif %}" 
+                     style="width: {{ result.percentage }}%">
+                    {{ result.percentage }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Answer Review -->
+    <h4 class="mb-4">
+        <i class="fas fa-list-check me-2"></i>
+        Javoblarni Ko'rib Chiqish
+    </h4>
+    
+    {% for response in responses %}
+    <div class="answer-review {% if response.is_correct %}correct{% else %}wrong{% endif %}">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h6 class="mb-0">
+                Savol {{ forloop.counter }}: {{ response.question.question_text }}
+            </h6>
+            <span class="badge {% if response.is_correct %}bg-success{% else %}bg-danger{% endif %}">
+                {% if response.is_correct %}
+                    <i class="fas fa-check me-1"></i>To'g'ri
+                {% else %}
+                    <i class="fas fa-times me-1"></i>Noto'g'ri
+                {% endif %}
+            </span>
+        </div>
+        
+        {% for option in response.question.options.all %}
+        <div class="answer-option 
+                    {% if option == response.selected_option %}selected{% endif %}
+                    {% if option.is_correct %}correct{% endif %}
+                    {% if option == response.selected_option and not response.is_correct %}wrong{% endif %}">
+            <div class="d-flex align-items-center">
+                {% if option.is_correct %}
+                    <i class="fas fa-check-circle text-success me-2"></i>
+                {% elif option == response.selected_option %}
+                    <i class="fas fa-times-circle text-danger me-2"></i>
+                {% else %}
+                    <i class="far fa-circle text-muted me-2"></i>
+                {% endif %}
+                <span>{{ option.option_text }}</span>
+                {% if option.is_correct %}
+                    <span class="badge bg-success ms-auto">To'g'ri javob</span>
+                {% elif option == response.selected_option %}
+                    <span class="badge bg-danger ms-auto">Sizning javobingiz</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    
+    <!-- Actions -->
+    <div class="text-center mt-5">
+        <a href="{% url 'list' %}" class="btn btn-outline-primary btn-lg me-3">
+            <i class="fas fa-arrow-left me-2"></i>Testlar Ro'yxati
+        </a>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-home me-2"></i>Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

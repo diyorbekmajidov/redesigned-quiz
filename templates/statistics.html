@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistika{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>Statistika</h2>
+    
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_tests }}</h3>
+                    <p>Topshirilgan Testlar</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ passed_tests }}</h3>
+                    <p>Muvaffaqiyatli</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ average_score }}%</h3>
+                    <p>O'rtacha Ball</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Best and Worst -->
+    <div class="row g-4 mt-4">
+        {% if highest_score %}
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-trophy me-2"></i>Eng Yaxshi Natija
+                </div>
+                <div class="card-body">
+                    <h4>{{ highest_score.attempt.quiz.title }}</h4>
+                    <h2 class="text-success">{{ highest_score.percentage }}%</h2>
+                    <small class="text-muted">{{ highest_score.created_at|date:"d M Y" }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if lowest_score %}
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-chart-line me-2"></i>Yaxshilash Kerak
+                </div>
+                <div class="card-body">
+                    <h4>{{ lowest_score.attempt.quiz.title }}</h4>
+                    <h2 class="text-warning">{{ lowest_score.percentage }}%</h2>
+                    <small class="text-muted">{{ lowest_score.created_at|date:"d M Y" }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Chart data from Django
+const chartData = {{ chart_data|safe }};
+
+// Score Line Chart
+const scoreCtx = document.getElementById('scoreChart');
+new Chart(scoreCtx, {
+    type: 'line',
+    data: {
+        labels: chartData.labels,
+        datasets: [{
+            label: 'Natijalar (%)',
+            data: chartData.scores,
+            borderColor: '#4F46E5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+
+// Pie Chart
+const pieCtx = document.getElementById('pieChart');
+new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['O\'tgan', 'O\'tmagan'],
+        datasets: [{
+            data: [{{ passed_tests }}, {{ failed_tests }}],
+            backgroundColor: ['#10B981', '#EF4444']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+{% endblock %}
