@@ -69,7 +69,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="text-muted">Tug'ilgan sana:</label>
-                            <p class="mb-0">{{ student.birth_date }}</p>
+                            <p class="mb-0">{{ student.birth_date|date:"d.m.Y" }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="text-muted">Pasport:</label>
@@ -96,11 +96,11 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="text-muted">To'lov shakli:</label>
-                            <p class="mb-0">{{ student.payment_form }}</p>
+                            <p class="mb-0">{{ student.paymentForm }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="text-muted">Holat:</label>
-                            <p class="mb-0">{{ student.student_status }}</p>
+                            <p class="mb-0">{{ student.studentStatus }}</p>
                         </div>
                     </div>
                 </div>

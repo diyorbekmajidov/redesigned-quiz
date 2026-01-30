@@ -37,6 +37,13 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+        .user-avatar img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
         
         * {
             font-family: 'Inter', sans-serif;
@@ -236,10 +243,20 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" 
                                role="button" data-bs-toggle="dropdown">
-                                <div class="user-avatar"
-                                    {{ request.student.student_name|first|upper }}
+                                <div class="user-avatar">
+                                    {% if request.student.image_url %}
+                                        <img src="{{ request.student.image_url }}"
+                                            alt="Avatar"
+                                            class="img-fluid rounded-circle"
+                                            style="width:40px; height:40px; object-fit:cover;">
+                                    {% else %}
+                                        <div class="user-avatar bg-light text-primary">
+                                            {{ request.student.student_name|slice:":1"|upper }}
+                                        </div>
+
+                                    {% endif %}
                                 </div>
-                                <span>{{ request.student.student_name|truncatewords:2 }}</span>
+
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>

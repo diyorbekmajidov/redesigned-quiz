@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load dict_extras %}
 
 {% block title %}{{ quiz.title }} - Test Topshirish{% endblock %}
 
@@ -19,6 +18,43 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         z-index: 1000;
         padding: 15px 0;
+    }
+    
+    /* Student Info - O'ng tarafda */
+    .student-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f8f9fa;
+        padding: 8px 15px;
+        border-radius: 50px;
+    }
+    
+    .student-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary-color);
+    }
+    
+    .student-avatar-placeholder {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .student-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.95rem;
     }
     
     .quiz-container {
@@ -57,6 +93,7 @@
         display: flex;
         gap: 20px;
         align-items: center;
+        flex-wrap: wrap;
     }
     
     .question-card {
@@ -170,13 +207,29 @@
 <!-- Fixed Header -->
 <div class="quiz-header-fixed">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h5 class="mb-0">{{ quiz.title }}</h5>
-                <small class="text-muted">{{ answered_count }}/{{ total_questions }} javob berilgan</small>
+                <small class="text-muted"><span id="answered-display">{{ answered_count }}</span>/{{ total_questions }} javob berilgan</small>
             </div>
+            
             <div class="progress-info">
-                <div class="save-status" id="save-status"></div>
+                <!-- Student Info - Rasm va Ism -->
+                <div class="student-info">
+                    {% if request.student.student_imeg %}
+                        <img src="{{ request.student.student_imeg }}" alt="{{ request.student.student_name }}" class="student-avatar">
+                    {% else %}
+                        <div class="student-avatar-placeholder">
+                            {{ request.student.student_name|first|upper }}
+                        </div>
+                    {% endif %}
+                    <span class="student-name">{{ request.student.student_name|truncatewords:3 }}</span>
+                </div>
+                
+                <div class="save-status" id="save-status">
+                    <i class="fas fa-check-circle me-1"></i> Avtomatik saqlanmoqda
+                </div>
+                
                 <div class="timer-display text-primary" 
                      id="quiz-timer" 
                      data-remaining-seconds="{{ remaining_time }}">
@@ -188,7 +241,7 @@
         <div class="progress mt-3" style="height: 5px;">
             <div class="progress-bar bg-success" 
                  id="progress-bar"
-                 style="width: {{ answered_count|floatformat:0 }}%"
+                 style="width: 0%"
                  data-total="{{ total_questions }}"></div>
         </div>
     </div>
@@ -201,6 +254,7 @@
         
         {% for question in questions %}
         <div class="question-card" id="question-{{ forloop.counter }}" 
+             data-question-id="{{ question.id }}"
              {% if not forloop.first %}style="display: none;"{% endif %}>
             <div class="question-number">{{ forloop.counter }}</div>
             
@@ -215,12 +269,12 @@
             
             <div class="options-container">
                 {% for option in question.options.all %}
-                <label class="option-item {% if responses|get_item:question.id == option.id %}selected{% endif %}">
+                <label class="option-item" data-option-id="{{ option.id }}">
                     <input type="radio" 
                            name="question_{{ question.id }}" 
                            value="{{ option.id }}"
-                           {% if responses|get_item:question.id == option.id %}checked{% endif %}
-                           onchange="markAsAnswered({{ forloop.parentloop.counter }})">
+                           data-question-num="{{ forloop.parentloop.counter }}"
+                           onchange="saveAnswer({{ question.id }}, {{ option.id }}, {{ forloop.parentloop.counter }})">
                     <span class="option-text">{{ option.option_text }}</span>
                 </label>
                 {% endfor %}
@@ -233,7 +287,7 @@
             <div class="container">
                 <div class="nav-dots" id="nav-dots">
                     {% for question in questions %}
-                    <div class="nav-dot {% if forloop.first %}current{% endif %} {% if responses|get_item:question.id %}answered{% endif %}"
+                    <div class="nav-dot {% if forloop.first %}current{% endif %}"
                          onclick="goToQuestion({{ forloop.counter }})"
                          id="dot-{{ forloop.counter }}">
                         {{ forloop.counter }}
@@ -289,11 +343,11 @@
                 <ul class="list-unstyled">
                     <li class="mb-2">
                         <i class="fas fa-check text-success me-2"></i>
-                        <span id="answered-count">{{ answered_count }}</span> ta savol javob berilgan
+                        <span id="modal-answered-count">0</span> ta savol javob berilgan
                     </li>
                     <li class="mb-2">
                         <i class="fas fa-times text-danger me-2"></i>
-                        <span id="unanswered-count">{{ total_questions|add:"-"|add:answered_count }}</span> ta javobsiz savol
+                        <span id="modal-unanswered-count">{{ total_questions }}</span> ta javobsiz savol
                     </li>
                 </ul>
                 
@@ -319,6 +373,90 @@
 <script>
 let currentQuestion = 1;
 const totalQuestions = {{ total_questions }};
+const attemptId = {{ attempt.id }};
+
+// LocalStorage key
+const STORAGE_KEY = `quiz_attempt_${attemptId}`;
+
+// Load saved answers from localStorage
+function loadSavedAnswers() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const answers = JSON.parse(saved);
+            console.log('Saqlangan javoblar yuklandi:', answers);
+            
+            // Apply saved answers
+            Object.keys(answers).forEach(questionId => {
+                const optionId = answers[questionId];
+                const radio = document.querySelector(`input[name="question_${questionId}"][value="${optionId}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    radio.closest('.option-item').classList.add('selected');
+                    
+                    // Mark question as answered
+                    const questionNum = parseInt(radio.dataset.questionNum);
+                    const dot = document.getElementById(`dot-${questionNum}`);
+                    if (dot) {
+                        dot.classList.add('answered');
+                    }
+                }
+            });
+            
+            updateProgressBar();
+        }
+    } catch (error) {
+        console.error('Javoblarni yuklashda xatolik:', error);
+    }
+}
+
+// Save answer to localStorage
+function saveAnswer(questionId, optionId, questionNum) {
+    try {
+        // Get current answers
+        let answers = {};
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            answers = JSON.parse(saved);
+        }
+        
+        // Update answer
+        answers[questionId] = optionId;
+        
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+        
+        // Update UI
+        document.querySelectorAll(`input[name="question_${questionId}"]`).forEach(radio => {
+            radio.closest('.option-item').classList.remove('selected');
+        });
+        event.target.closest('.option-item').classList.add('selected');
+        
+        // Mark as answered
+        const dot = document.getElementById(`dot-${questionNum}`);
+        if (dot) {
+            dot.classList.add('answered');
+        }
+        
+        updateProgressBar();
+        
+        // Show save status
+        showSaveStatus();
+        
+    } catch (error) {
+        console.error('Javobni saqlashda xatolik:', error);
+    }
+}
+
+function showSaveStatus() {
+    const status = document.getElementById('save-status');
+    status.innerHTML = '<i class="fas fa-check-circle me-1"></i> Saqlandi';
+    status.style.color = 'var(--success-color)';
+    
+    setTimeout(() => {
+        status.innerHTML = '<i class="fas fa-check-circle me-1"></i> Avtomatik saqlanmoqda';
+    }, 2000);
+}
 
 function goToQuestion(num) {
     // Hide all questions
@@ -356,25 +494,33 @@ function updateButtons() {
     const nextBtn = document.getElementById('nextBtn');
     
     prevBtn.disabled = currentQuestion === 1;
-    nextBtn.textContent = currentQuestion === totalQuestions ? 'Yakunlash' : 'Keyingi';
-}
-
-function markAsAnswered(questionNum) {
-    document.getElementById(`dot-${questionNum}`).classList.add('answered');
-    updateProgressBar();
+    
+    if (currentQuestion === totalQuestions) {
+        nextBtn.innerHTML = 'Yakunlash <i class="fas fa-check ms-2"></i>';
+        nextBtn.onclick = function() {
+            document.getElementById('submitModal').querySelector('.btn-success').click();
+        };
+    } else {
+        nextBtn.innerHTML = 'Keyingi <i class="fas fa-arrow-right ms-2"></i>';
+        nextBtn.onclick = nextQuestion;
+    }
 }
 
 function updateProgressBar() {
     const answered = document.querySelectorAll('.nav-dot.answered').length;
     const percentage = (answered / totalQuestions) * 100;
     document.getElementById('progress-bar').style.width = percentage + '%';
+    document.getElementById('answered-display').textContent = answered;
     
     // Update modal counts
-    document.getElementById('answered-count').textContent = answered;
-    document.getElementById('unanswered-count').textContent = totalQuestions - answered;
+    document.getElementById('modal-answered-count').textContent = answered;
+    document.getElementById('modal-unanswered-count').textContent = totalQuestions - answered;
 }
 
 function submitQuiz() {
+    // Clear localStorage on submit
+    localStorage.removeItem(STORAGE_KEY);
+    
     const form = document.getElementById('quiz-form');
     const submitInput = document.createElement('input');
     submitInput.type = 'hidden';
@@ -399,17 +545,23 @@ document.querySelectorAll('.option-item input[type="radio"]').forEach(radio => {
 
 // Prevent accidental page leave
 window.addEventListener('beforeunload', function(e) {
-    e.preventDefault();
-    e.returnValue = '';
+    const answered = document.querySelectorAll('.nav-dot.answered').length;
+    if (answered > 0) {
+        e.preventDefault();
+        e.returnValue = 'Javoblaringiz saqlanmagan. Chiqmoqchimisiz?';
+    }
 });
 
 // Remove warning when submitting
 document.getElementById('quiz-form').addEventListener('submit', function() {
-    window.removeEventListener('beforeunload', arguments.callee);
+    window.onbeforeunload = null;
 });
 
 // Initialize
-updateButtons();
-updateProgressBar();
+document.addEventListener('DOMContentLoaded', function() {
+    loadSavedAnswers();
+    updateButtons();
+    updateProgressBar();
+});
 </script>
 {% endblock %}

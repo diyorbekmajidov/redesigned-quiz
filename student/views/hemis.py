@@ -10,6 +10,7 @@ import requests
 import os
 import logging
 from dotenv import load_dotenv
+from .views import safe_log_data
 
 logger = logging.getLogger(__name__)
 load_dotenv()
