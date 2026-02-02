@@ -198,6 +198,7 @@ class AuthCallbackView(View):
             
             # User ma'lumotlari
             user_details = client.get_user_details(access_token)
+            print(user_details)
             
             if 'error' in user_details:
                 return self._error_response(
@@ -288,17 +289,17 @@ class AuthCallbackView(View):
                 group_code=group_data[0].get('id', 'Unknown'),
                 defaults={
                     'group_name': group_data[0].get('name', 'Unknown Group'),
-                    'faculty': data.get('faculty', {}).get('name', ''),
-                    'level': data.get('level', {}).get('name', ''),
-                    'academic_year': data.get('semester', {}).get('education_year', {}).get('name', ''),
+                    'group_faculty': data.get('faculty', {}).get('name', ''),
+                    'group_level': data.get('level', {}).get('name', ''),
+                    'group_year': data.get('semester', {}).get('education_year', {}).get('name', ''),
                 }
             )
         
         # Student yaratish/yangilash
         student_id_number = user_details.get('student_id_number') or data.get('student_id_number', '')
         
-        student, created = Student.objects.update_or_create(
-            student_id_number=student_id_number,
+        student, created = Student.objects.get_or_create(
+            hemis_id=student_id_number,
             defaults={
                 'student_name': data.get('full_name', ''),
                 'email': data.get('email', ''),
@@ -307,10 +308,11 @@ class AuthCallbackView(View):
                 'birth_date': data.get('birth_date', '2000-01-01'),
                 'faculty': data.get('faculty', {}).get('name', ''),
                 'level': str(data.get('level', {}).get('code', '1')),
-                'payment_form': data.get('paymentForm', {}).get('name', 'contract'),
-                'student_status': data.get('studentStatus', {}).get('name', 'active'),
+                'paymentForm': data.get('paymentForm', {}).get('name', 'contract'),
+                'studentStatus': data.get('studentStatus', {}).get('name', 'active'),
                 'avg_gpa': data.get('avg_gpa', 0),
-                'hemis_id': data.get('id', ''),
+                'student_id_number': data.get('id', ''),
+                'hemis_id': data.get('student_id_number', '')
             }
         )
         

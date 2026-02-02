@@ -35,6 +35,7 @@ class Student(models.Model):
     phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
     student_imeg = models.URLField(blank=True, null=True)
     student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
+    hemis_id = models.CharField(max_length=32)
     email = models.CharField(max_length=86)
     passport_number = models.CharField(max_length=12, verbose_name="passport raqami")
     birth_date = models.CharField(max_length=50, verbose_name="Tug'ilgan-kun-sanasi")

@@ -14,7 +14,7 @@ class StudentLoginRequiredMixin:
     
     def dispatch(self, request, *args, **kwargs):
         if not hasattr(request, 'student') or not request.student:
-            return redirect('auth:login')
+            return redirect('login')
         return super().dispatch(request, *args, **kwargs)
 
 
