@@ -27,6 +27,12 @@ SECRET_KEY = 'django-insecure-4+du&wz20wp+_n2k_qme*ug=_st+zt74f!&ywgd_qluy#4p7gj
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+    'https://campus.samdpi.uz/',
+    'http://campus.samdpi.uz/',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+]
 
 
 # Application definition
