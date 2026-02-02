@@ -22,7 +22,7 @@ class UserSession(models.Model):
     session_key = models.CharField(max_length=100, unique=True, verbose_name="Session key")
     access_token = models.TextField(verbose_name="Access token")
     refresh_token = models.TextField(blank=True, null=True, verbose_name="Refresh token")
-    token_type = models.CharField(max_length=50, default='Bearer', verbose_name="Token turi")
+    token_type = models.CharField(max_length=100, default='Bearer', verbose_name="Token turi")
     expires_at = models.DateTimeField(verbose_name="Token muddati")
     user_agent = models.TextField(blank=True, verbose_name="User agent")
     ip_address = models.GenericIPAddressField(blank=True, null=True, verbose_name="IP manzil")
@@ -228,7 +228,7 @@ class LoginHistory(models.Model):
         verbose_name="User agent"
     )
     device_type = models.CharField(
-        max_length=50,
+        max_length=100,
         blank=True,
         verbose_name="Device turi"
     )
