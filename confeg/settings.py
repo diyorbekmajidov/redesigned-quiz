@@ -48,11 +48,17 @@ INSTALLED_APPS = [
     'student',
     'UserSession',
 ]
+
 CSRF_TRUSTED_ORIGINS = [
-    'https://campus.samdpi.uz/',
-    'http://campus.samdpi.uz/',
+    'https://campus.samdpi.uz',
+    'https://www.campus.samdpi.uz',
+    'http://campus.samdpi.uz',
     'http://localhost:3000',
     'http://127.0.0.1:8000',
+]
+CORS_ALLOWED_ORIGINS = [
+    'https://campus.samdpi.uz',
+    'https://www.campus.samdpi.uz',
 ]
 
 MIDDLEWARE = [
