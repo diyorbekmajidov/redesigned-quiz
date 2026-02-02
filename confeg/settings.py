@@ -97,7 +97,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'redesigned-quiz',
-        'USER': 'RedesignedQuizUser',
+        'USER': 'redesignedquizuser',
         'PASSWORD': 'QUIZ-USER-312',
         'HOST': '127.0.0.1',
         'PORT': '5432',
