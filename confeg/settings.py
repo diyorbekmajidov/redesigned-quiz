@@ -96,7 +96,7 @@ WSGI_APPLICATION = 'confeg.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'RedesignedQuiz',
+        'NAME': 'redesigned-quiz',
         'USER': 'RedesignedQuizUser',
         'PASSWORD': 'QUIZ-USER-312',
         'HOST': '127.0.0.1',
