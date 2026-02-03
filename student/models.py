@@ -31,20 +31,20 @@ class Student(models.Model):
         default=uuid.uuid4,
         editable=False
     )
-    student_name = models.CharField(max_length=56, blank=True, null=True, verbose_name="Talaba_Ismi")
+    student_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Talaba_Ismi")
     phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
     student_imeg = models.URLField(blank=True, null=True)
     student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
     hemis_id = models.CharField(max_length=32)
-    email = models.CharField(max_length=86)
+    email = models.CharField(max_length=255, verbose_name="email manzili")
     passport_number = models.CharField(max_length=12, verbose_name="passport raqami")
     birth_date = models.CharField(max_length=50, verbose_name="Tug'ilgan-kun-sanasi")
-    studentStatus = models.CharField(max_length=86, verbose_name="talaba-holati")
-    paymentForm = models.CharField(max_length=86, verbose_name="to'lov shakli")
-    faculty = models.CharField(max_length=86, verbose_name="fakultet")
-    level = models.CharField(max_length=86, verbose_name="kurs")
-    avg_gpa = models.CharField(max_length=86, verbose_name="Gpa-bali")
-    education_type = models.CharField(max_length=86, verbose_name="ta'lim-turi")
+    studentStatus = models.CharField(max_length=255, verbose_name="talaba-holati")
+    paymentForm = models.CharField(max_length=255, verbose_name="to'lov shakli")
+    faculty = models.CharField(max_length=255, verbose_name="fakultet")
+    level = models.CharField(max_length=255, verbose_name="kurs")
+    avg_gpa = models.CharField(max_length=255, verbose_name="Gpa-bali")
+    education_type = models.CharField(max_length=255, verbose_name="ta'lim-turi")
     gender = models.CharField(max_length=56, verbose_name="jinsi")
     semester = models.CharField(max_length=56, verbose_name="semestr")
 
@@ -96,7 +96,7 @@ class StudentGirls(models.Model):
         verbose_name="Talaba"
     )
     
-    place_of_birth = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tug'ilgan joyi")
+    place_of_birth = models.CharField(max_length=560, blank=True, null=True, verbose_name="Tug'ilgan joyi")
     current_address = models.CharField(max_length=256, blank=True, null=True, verbose_name="Hozirgi manzili")
     district = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tuman")
     province = models.CharField(max_length=100, blank=True, null=True, verbose_name="Viloyat")
@@ -111,10 +111,10 @@ class StudentGirls(models.Model):
     number_of_children = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Bolalar soni")
     
     disability_status = models.BooleanField(default=False, verbose_name="Nogironlik holati")
-    disability_type = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nogironlik turi")
+    disability_type = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nogironlik turi")
     
     orphan_status = models.CharField(
-        max_length=56, 
+        max_length=256, 
         choices=ORPHAN_TYPES,
         default='yetim_emas',
         verbose_name="Yetim holati"
@@ -123,7 +123,7 @@ class StudentGirls(models.Model):
     social_registry_status = models.BooleanField(default=False, verbose_name="Ijtimoiy ro'yxatda")
     
     ethics_status = models.CharField(
-        max_length=56, 
+        max_length=256, 
         choices=ETHICS_TYPES,
         default='yashil',
         verbose_name="Axloqi"

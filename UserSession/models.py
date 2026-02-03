@@ -19,7 +19,7 @@ class UserSession(models.Model):
     """
 
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='sessions', verbose_name="Talaba")
-    session_key = models.CharField(max_length=100, unique=True, verbose_name="Session key")
+    session_key = models.CharField(max_length=255, unique=True, verbose_name="Session key")
     access_token = models.TextField(verbose_name="Access token")
     refresh_token = models.TextField(blank=True, null=True, verbose_name="Refresh token")
     token_type = models.CharField(max_length=100, default='Bearer', verbose_name="Token turi")

@@ -210,7 +210,7 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
         # Vaqt tugaganligini tekshirish
         if attempt.is_time_expired():
             attempt.expire_attempt()
-            return redirect('quiz:result', attempt_id=attempt.id)
+            return redirect('result', attempt_id=attempt.id)
         
         # Savollar (random tartibda)
         questions = quiz.questions.prefetch_related('options').order_by('order')
