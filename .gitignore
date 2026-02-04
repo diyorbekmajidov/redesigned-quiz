@@ -14,6 +14,7 @@ media
 .env.*
 db.sqlite3
 *.sqlite3
+student.json/
 
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/

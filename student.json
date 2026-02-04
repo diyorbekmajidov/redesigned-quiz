@@ -1,0 +1,153 @@
+{
+    "id": 10937,
+    "uuid": "6d4cbfa6-10a6-7b4a-4596-005eaaf5ef33",
+    "student_id_number": "320241100757",
+    "type": "student",
+    "roles": [],
+    "name": "Rayhona Obloyorova",
+    "login": "320241100757",
+    "email": "obloyorovarayhona@gmail.com",
+    "phone": "+998930785367",
+    "passport_pin": "60805056130101",
+    "passport_number": "AD1679875",
+    "picture": "https://hemis.uzfi.uz/static/crop/7/4/120_120_90_747681728.jpg",
+    "picture_full": "https://hemis.uzfi.uz/static/crop/7/4/320__90_747681728.jpg",
+    "firstname": "RAYHONA",
+    "surname": "OBLOYOROVA",
+    "patronymic": "YOQUB QIZI",
+    "birth_date": "08-05-2005",
+    "university_id": "320",
+    "groups": [
+        {
+            "id": 693,
+            "name": "02_2024(uz)_Tas_san  ",
+            "curriculum": {
+                "id": 191,
+                "name": "2024_Tasviriy san'at va muhandislik grafikasi"
+            },
+            "education_lang": {
+                "code": "11",
+                "name": "O‘zbek"
+            },
+            "education_form": {
+                "code": "11",
+                "name": "Kunduzgi"
+            },
+            "education_type": {
+                "code": "11",
+                "name": "Bakalavr"
+            }
+        }
+    ],
+    "data": {
+        "id": 10937,
+        "first_name": "RAYHONA",
+        "second_name": "OBLOYOROVA",
+        "third_name": "YOQUB QIZI",
+        "full_name": "OBLOYOROVA RAYHONA YOQUB QIZI",
+        "short_name": "OBLOYOROVA R. Y.",
+        "student_id_number": "320241100757",
+        "image": "https: //hemis.uzfi.uz/static/crop/7/4/320_320_90_747681728.jpg",
+        "birth_date": 1115510400,
+        "email": "obloyorovarayhona@gmail.com",
+        "phone": "+998930785367",
+        "gender": {
+            "code": "12",
+            "name": "Ayol"
+        },
+        "university": "Samarqand davlat pedagogika instituti",
+        "universityOwnership": {
+            "code": "11",
+            "name": "Davlat"
+        },
+        "specialty": {
+            "id": "47e3f1ce-1e40-e73b-8339-baf0ae3a96eb",
+            "code": "60110500",
+            "name": "Tasviriy sanʼat va muhandislik grafikasi"
+        },
+        "studentStatus": {
+            "code": "11",
+            "name": "O‘qimoqda"
+        },
+        "educationForm": {
+            "code": "11",
+            "name": "Kunduzgi"
+        },
+        "educationType": {
+            "code": "11",
+            "name": "Bakalavr"
+        },
+        "paymentForm": {
+            "code": "12",
+            "name": "To‘lov-shartnoma"
+        },
+        "group": {
+            "id": 693,
+            "name": "02_2024(uz)_Tas_san  ",
+            "educationLang": {
+                "code": "11",
+                "name": "O‘zbek"
+            }
+        },
+        "faculty": {
+            "id": 2,
+            "name": "Aniq va amaliy fanlar",
+            "code": "320-102",
+            "structureType": {
+                "code": "11",
+                "name": "Fakultet"
+            },
+            "localityType": {
+                "code": "11",
+                "name": "Mahalliy"
+            },
+            "parent": None,
+            "active": True
+        },
+        "educationLang": {
+            "code": "11",
+            "name": "O‘zbek"
+        },
+        "level": {
+            "code": "12",
+            "name": "2-kurs"
+        },
+        "semester": {
+            "id": 1348,
+            "code": "13",
+            "name": "3-semestr",
+            "current": False,
+            "education_year": {
+                "code": "2025",
+                "name": "2025-2026",
+                "current": True
+            }
+        },
+        "avg_gpa": "3.07",
+        "address": "Sovgon MFY, Ochamayli kuchasi, 19-uy",
+        "country": {
+            "code": "UZ",
+            "name": "O‘zbekiston"
+        },
+        "province": {
+            "code": "1718",
+            "name": "Samarqand viloyati",
+            "_parent": "1718"
+        },
+        "district": {
+            "code": "1718236",
+            "name": "Urgut tumani",
+            "_parent": "1718"
+        },
+        "socialCategory": {
+            "code": "10",
+            "name": "Boshqa"
+        },
+        "povertyLevel": None,
+        "accommodation": {
+            "code": "14",
+            "name": "Ijaradagi uyda"
+        },
+        "hash": "aa814ddc31502f8cc89ce30b5645ff973ed4b265dda4152f2c86e81ab7c31491"
+    }
+}

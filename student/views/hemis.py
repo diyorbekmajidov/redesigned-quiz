@@ -198,7 +198,7 @@ class AuthCallbackView(View):
             
             # User ma'lumotlari
             user_details = client.get_user_details(access_token)
-            print(user_details)
+            print(user_details, '23232')
             
             if 'error' in user_details:
                 return self._error_response(
@@ -206,7 +206,6 @@ class AuthCallbackView(View):
                     user_details['error']
                 )
             
-            # Student yaratish/yangilash
             student = self._get_or_create_student(user_details)
             self._get_or_create_student_girl(user_details, student)
             
@@ -292,19 +291,21 @@ class AuthCallbackView(View):
                     'group_faculty': data.get('faculty', {}).get('name', ''),
                     'group_level': data.get('level', {}).get('name', ''),
                     'group_year': data.get('semester', {}).get('education_year', {}).get('name', ''),
+                    'education_form': group_data[0]['education_form'].get('name'),
+                    'education_lang': group_data[0]['education_lang'].get('name')
                 }
             )
         
         # Student yaratish/yangilash
         student_id_number = user_details.get('student_id_number') or data.get('student_id_number', '')
         
-        student, created = Student.objects.get_or_create(
+        student, created = Student.objects.update_or_create(
             hemis_id=student_id_number,
             defaults={
                 'student_name': data.get('full_name', ''),
                 'email': data.get('email', ''),
                 'phone_number': data.get('phone', ''),
-                'passport_number': data.get('passport_number', ''),
+                'passport_number': user_details.get('passport_number', ''),
                 'birth_date': data.get('birth_date', '2000-01-01'),
                 'faculty': data.get('faculty', {}).get('name', ''),
                 'level': str(data.get('level', {}).get('code', '1')),
@@ -312,7 +313,12 @@ class AuthCallbackView(View):
                 'studentStatus': data.get('studentStatus', {}).get('name', 'active'),
                 'avg_gpa': data.get('avg_gpa', 0),
                 'student_id_number': data.get('id', ''),
-                'hemis_id': data.get('student_id_number', '')
+                'hemis_id': data.get('student_id_number', ''),
+                'student_imeg': data.get('picture_full', ''),
+                'gender': data['gender'].get('name',''),
+                'education_type': group_data[0]['education_type'].get('name', ''),
+                'semester': data['semester'].get('name', ''),
+                'group':group
             }
         )
         
@@ -327,13 +333,12 @@ class AuthCallbackView(View):
         
         data = user_details.get('data', {})
         
-        # Faqat qiz talabalar uchun
         gender = data.get('gender', {}).get('code')
         if gender != 11:  # 11 = qiz (HEMIS'da)
             return None
         
         girl, created = StudentGirls.objects.get_or_create(
-            student=student,
+            hemis_id=student,
             defaults={
                 'place_of_birth': data.get('address', ''),
                 'current_address': data.get('accommodation', {}).get('name', ''),
@@ -351,7 +356,6 @@ class LogoutView(View):
     
     def get(self, request):
         try:
-            # UserSession'ni deaktivatsiya qilish
             student_id = request.session.get('student_id')
             user_session_id = request.session.get('user_session_id')
             
@@ -362,7 +366,6 @@ class LogoutView(View):
                     user_session = UserSession.objects.get(id=user_session_id)
                     user_session.deactivate()
                     
-                    # Login history'ni yangilash
                     from django.utils import timezone
                     LoginHistory.objects.filter(
                         session=user_session,
@@ -372,7 +375,6 @@ class LogoutView(View):
                 except UserSession.DoesNotExist:
                     pass
             
-            # Session tozalash
             request.session.flush()
             
             logger.info("Foydalanuvchi tizimdan chiqdi")
@@ -383,60 +385,3 @@ class LogoutView(View):
             logger.error(f"Logout xatolik: {e}")
             request.session.flush()
             return redirect('home')
-
-
-# ============ MIDDLEWARE ============
-
-class StudentAuthMiddleware:
-    """
-    Har bir request'da student'ning session'ini tekshirish middleware
-    """
-    
-    def __init__(self, get_response):
-        self.get_response = get_response
-    
-    def __call__(self, request):
-        # Student'ni request'ga qo'shish
-        student_id = request.session.get('student_id')
-        user_session_id = request.session.get('user_session_id')
-        
-        request.student = None
-        request.user_session = None
-        
-        if student_id and user_session_id:
-            try:
-                from UserSession.models import UserSession
-                from student.models import Student
-                
-                # UserSession olish
-                user_session = UserSession.objects.select_related('student').get(
-                    id=user_session_id,
-                    is_active=True
-                )
-                
-                # Token hali ham validmi?
-                if not user_session.is_valid():
-                    # Token muddati tugagan, refresh qilib ko'rish
-                    if user_session.refresh_if_needed():
-                        user_session.refresh_from_db()
-                    else:
-                        # Refresh ham muvaffaqiyatsiz, logout
-                        request.session.flush()
-                        return self.get_response(request)
-                
-                # Student va session'ni request'ga qo'shish
-                request.student = user_session.student
-                request.user_session = user_session
-                
-                # Activity'ni yangilash (har 5 daqiqada)
-                from django.utils import timezone
-                from datetime import timedelta
-                if timezone.now() - user_session.last_activity > timedelta(minutes=5):
-                    user_session.update_activity()
-                
-            except (UserSession.DoesNotExist, Student.DoesNotExist):
-                # Session topilmadi, tozalash
-                request.session.flush()
-        
-        response = self.get_response(request)
-        return response

@@ -15,16 +15,24 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+secret_key = os.getenv('SECRET_KEY', 'your-default-secret-key')
+debug = os.getenv('DEBUG', 'False') == 'True'
+db_name = os.getenv('DB_NAME', 'redesigned-quiz')
+db_user = os.getenv('DB_USER', 'redesignedquizuser')
+db_password = os.getenv('DB_PASSWORD', 'QUIZ-USER-312')
+db_host = os.getenv('DB_HOST', 'localhost')
+db_port = os.getenv('DB_PORT', '5432')
+
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4+du&wz20wp+_n2k_qme*ug=_st+zt74f!&ywgd_qluy#4p7gj'
+SECRET_KEY = secret_key
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = debug
 
 ALLOWED_HOSTS = ['*']
 
@@ -109,11 +117,11 @@ WSGI_APPLICATION = 'confeg.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'redesigned-quiz',
-        'USER': 'redesignedquizuser',
-        'PASSWORD': 'QUIZ-USER-312',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': f'{db_name}',
+        'USER': f'{db_user}',
+        'PASSWORD': f'{db_password}',
+        'HOST': f'{db_host}',
+        'PORT': f'{db_port}',
     }
 }
 
