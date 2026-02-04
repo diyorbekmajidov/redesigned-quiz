@@ -198,7 +198,6 @@ class AuthCallbackView(View):
             
             # User ma'lumotlari
             user_details = client.get_user_details(access_token)
-            print(user_details, '23232')
             
             if 'error' in user_details:
                 return self._error_response(
@@ -281,7 +280,6 @@ class AuthCallbackView(View):
         data = user_details.get('data', {})
         group_data = user_details.get('groups', [])
         
-        # Guruh yaratish/yangilash
         group = None
         if group_data:
             group, _ = StudentGroup.objects.get_or_create(
@@ -314,7 +312,7 @@ class AuthCallbackView(View):
                 'avg_gpa': data.get('avg_gpa', 0),
                 'student_id_number': data.get('id', ''),
                 'hemis_id': data.get('student_id_number', ''),
-                'student_imeg': data.get('picture_full', ''),
+                'student_imeg': data.get('image', ''),
                 'gender': data['gender'].get('name',''),
                 'education_type': group_data[0]['education_type'].get('name', ''),
                 'semester': data['semester'].get('name', ''),
@@ -324,6 +322,7 @@ class AuthCallbackView(View):
         
         action = "yaratildi" if created else "yangilandi"
         logger.info(f"Student {action}: {student.student_name}")
+
         
         return student
     
@@ -334,11 +333,10 @@ class AuthCallbackView(View):
         data = user_details.get('data', {})
         
         gender = data.get('gender', {}).get('code')
-        if gender != 11:  # 11 = qiz (HEMIS'da)
+        if gender == 11:
             return None
-        
-        girl, created = StudentGirls.objects.get_or_create(
-            hemis_id=student,
+        girl, created = StudentGirls.objects.update_or_create(
+            student=student,
             defaults={
                 'place_of_birth': data.get('address', ''),
                 'current_address': data.get('accommodation', {}).get('name', ''),
