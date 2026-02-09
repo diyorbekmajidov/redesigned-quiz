@@ -1,341 +1,639 @@
+# ============================================
+# ADMIN PANEL - PSIXOLOGIK VA STANDART TESTLAR
+# ============================================
+
+"""
+main/admin.py - To'liq admin interface
+"""
+
 from django.contrib import admin
 from django.utils.html import format_html
-from django.db.models import Count, Avg
 from .models import (
-    Quiz, Question, QuizAttempt, Result, 
-    Option, UserResponse, QuestionText
+    Quiz, Question, QuestionText, Option,
+    QuizAttempt, UserResponse, Result,
+    PsychologicalScale, PsychologicalCategory,
+    PsychologicalResult, PsychologicalScaleResult
 )
 
 
-# ============ INLINE CLASSES ============
+# ==================== INLINE ADMINS ====================
+
+class PsychologicalScaleInline(admin.TabularInline):
+    """Quiz ichida shkalalarni ko'rsatish"""
+    model = PsychologicalScale
+    extra = 1
+    fields = ('name', 'description', 'order')
+
+
+class PsychologicalCategoryInline(admin.TabularInline):
+    """Shkala ichida kategoriyalarni ko'rsatish"""
+    model = PsychologicalCategory
+    extra = 1
+    fields = ('name', 'min_score', 'max_score', 'color', 'order', 'description')
+
 
 class OptionInline(admin.TabularInline):
+    """Question ichida javoblarni ko'rsatish"""
     model = Option
     extra = 4
-    fields = ['option_text', 'is_correct']
+    fields = ('option_text', 'is_correct', 'psychological_score', 'order')
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        """Dinamik fieldlar - test turiga qarab"""
+        formset = super().get_formset(request, obj, **kwargs)
+        
+        # Agar quiz mavjud bo'lsa
+        if obj and obj.quiz:
+            if obj.quiz.is_psychological():
+                # Psixologik testda faqat psychological_score
+                self.fields = ('option_text', 'psychological_score', 'order')
+            else:
+                # Standart testda faqat is_correct
+                self.fields = ('option_text', 'is_correct', 'order')
+        
+        return formset
 
 
 class QuestionInline(admin.TabularInline):
+    """Quiz ichida savollarni ko'rsatish (small preview)"""
     model = Question
     extra = 0
-    fields = ['question_text', 'score', 'order']
-    readonly_fields = []
-    show_change_link = True  # Question'ga o'tish uchun
+    fields = ('question_text', 'score', 'psychological_scale', 'order')
+    show_change_link = True  # Savolga o'tish uchun
 
 
-class UserResponseInline(admin.TabularInline):
-    model = UserResponse
+class PsychologicalScaleResultInline(admin.TabularInline):
+    """Psixologik natija ichida shkala natijalarini ko'rsatish"""
+    model = PsychologicalScaleResult
     extra = 0
-    readonly_fields = ['question', 'selected_option', 'is_correct', 'answered_at']
+    readonly_fields = ('scale', 'total_score', 'category', 'category_color')
     can_delete = False
     
-    def has_add_permission(self, request, obj=None):
-        return False
+    def category_color(self, obj):
+        """Kategoriya rangini ko'rsatish"""
+        if obj.category:
+            colors = {
+                'green': '#10B981',
+                'yellow': '#F59E0B',
+                'orange': '#F97316',
+                'red': '#EF4444',
+            }
+            color = colors.get(obj.category.color, '#6B7280')
+            return format_html(
+                '<span style="display:inline-block;width:20px;height:20px;'
+                'background:{};border-radius:50%;"></span> {}',
+                color,
+                obj.category.name
+            )
+        return '-'
+    
+    category_color.short_description = 'Kategoriya'
 
 
-# ============ ADMIN CLASSES ============
+# ==================== MAIN ADMINS ====================
 
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
-    list_display = [
-        'title', 
-        'question_count',
-        'time_limit', 
-        'passing_score', 
-        'is_active_display',
-        'attempt_count',
-        'created_by', 
+    """Quiz admin"""
+    
+    list_display = (
+        'quiz_icon',
+        'title',
+        'quiz_type',
+        'time_limit',
+        'passing_score',
+        'questions_count',
+        'attempts_count',
+        'is_active',
         'created_at'
-    ]
-    list_filter = ['is_active', 'created_at', 'created_by']
-    search_fields = ['title', 'description']
-    readonly_fields = ['created_at', 'updated_at']
-    inlines = [QuestionInline]
+    )
+    
+    list_filter = (
+        'quiz_type',
+        'is_active',
+        'created_at',
+    )
+    
+    search_fields = ('title', 'description')
     
     fieldsets = (
-        ('Asosiy ma\'lumotlar', {
-            'fields': ('title', 'description', 'created_by', 'is_active')
+        ('Asosiy Ma\'lumotlar', {
+            'fields': ('title', 'description', 'quiz_type', 'is_active')
         }),
-        ('Sozlamalar', {
-            'fields': ('time_limit', 'passing_score')
+        ('Test Sozlamalari', {
+            'fields': ('time_limit', 'passing_score'),
+            'description': 'passing_score faqat standart testlar uchun ishlatiladi'
         }),
-        ('Vaqt ma\'lumotlari', {
-            'fields': ('created_at', 'updated_at'),
+        ('Texnik Ma\'lumotlar', {
+            'fields': ('created_by',),
             'classes': ('collapse',)
         }),
     )
     
+    inlines = [PsychologicalScaleInline, QuestionInline]
+    
     def save_model(self, request, obj, form, change):
-        if not change:  # Yangi yaratilayotgan bo'lsa
+        """Yaratuvchini avtomatik o'rnatish"""
+        if not change:  # Yangi quiz
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
     
-    def question_count(self, obj):
+    def quiz_icon(self, obj):
+        """Test turi ikonasi"""
+        if obj.is_psychological():
+            return format_html('<span style="font-size:20px;">🧠</span>')
+        return format_html('<span style="font-size:20px;">📝</span>')
+    
+    quiz_icon.short_description = ''
+    
+    def questions_count(self, obj):
+        """Savollar soni"""
         count = obj.get_total_questions()
         return format_html(
-            '<span style="font-weight: bold;">{}</span>',
+            '<strong style="color:#4F46E5;">{}</strong> ta',
             count
         )
-    question_count.short_description = 'Savollar'
     
-    def attempt_count(self, obj):
+    questions_count.short_description = 'Savollar'
+    
+    def attempts_count(self, obj):
+        """Urinishlar soni"""
         count = obj.attempts.count()
-        color = 'green' if count > 0 else 'gray'
         return format_html(
-            '<span style="color: {};">{} ta</span>',
-            color, count
+            '<span style="color:#10B981;">{}</span> urinish',
+            count
         )
-    attempt_count.short_description = 'Urinishlar'
     
-    def is_active_display(self, obj):
-        if obj.is_active:
-            return format_html(
-                '<span style="color: green; font-weight: bold;">✓ Faol</span>'
-            )
+    attempts_count.short_description = 'Urinishlar'
+
+
+@admin.register(PsychologicalScale)
+class PsychologicalScaleAdmin(admin.ModelAdmin):
+    """Psixologik shkala admin"""
+    
+    list_display = ('name', 'quiz', 'categories_count', 'order')
+    list_filter = ('quiz',)
+    search_fields = ('name', 'description')
+    
+    inlines = [PsychologicalCategoryInline]
+    
+    def categories_count(self, obj):
+        """Kategoriyalar soni"""
+        return obj.categories.count()
+    
+    categories_count.short_description = 'Kategoriyalar'
+
+
+@admin.register(PsychologicalCategory)
+class PsychologicalCategoryAdmin(admin.ModelAdmin):
+    """Kategoriya admin"""
+    
+    list_display = ('name', 'scale', 'score_range', 'color_display', 'order')
+    list_filter = ('scale', 'color')
+    search_fields = ('name', 'description')
+    
+    def score_range(self, obj):
+        """Ball oralig'i"""
+        return f"{obj.min_score} - {obj.max_score}"
+    
+    score_range.short_description = 'Ball oralig\'i'
+    
+    def color_display(self, obj):
+        """Rang ko'rsatish"""
+        colors = {
+            'green': '#10B981',
+            'yellow': '#F59E0B',
+            'orange': '#F97316',
+            'red': '#EF4444',
+        }
+        color = colors.get(obj.color, '#6B7280')
         return format_html(
-            '<span style="color: red;">✗ Nofaol</span>'
+            '<span style="display:inline-block;width:50px;height:20px;'
+            'background:{};border-radius:4px;"></span>',
+            color
         )
-    is_active_display.short_description = 'Holat'
+    
+    color_display.short_description = 'Rang'
 
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ['quiz', 'question_text_short', 'score', 'order', 'option_count']
-    list_filter = ['quiz', 'score']
-    search_fields = ['question_text']
+    """Savol admin"""
+    
+    list_display = (
+        'quiz',
+        'question_preview',
+        'quiz_type_display',
+        'score',
+        'psychological_scale',
+        'options_count',
+        'order'
+    )
+    
+    list_filter = (
+        'quiz__quiz_type',
+        'quiz',
+        'psychological_scale',
+    )
+    
+    search_fields = ('question_text',)
+    
     inlines = [OptionInline]
-    ordering = ['quiz', 'order']
-    list_editable = ['order']  # Tartibni o'zgartirish uchun
-    
-    def question_text_short(self, obj):
-        text = obj.question_text[:50] + '...' if len(obj.question_text) > 50 else obj.question_text
-        return format_html('<span title="{}">{}</span>', obj.question_text, text)
-    question_text_short.short_description = 'Savol'
-    
-    def option_count(self, obj):
-        count = obj.options.count()
-        correct = obj.options.filter(is_correct=True).count()
-        return format_html(
-            '{} ta (✓ {})',
-            count, correct
-        )
-    option_count.short_description = 'Variantlar'
-
-
-@admin.register(QuestionText)
-class QuestionTextAdmin(admin.ModelAdmin):
-    """Bulk yuklash uchun admin"""
-    list_display = ['quiz', 'is_processed', 'created_at', 'preview']
-    list_filter = ['is_processed', 'quiz', 'created_at']
-    search_fields = ['quiz__title']
-    readonly_fields = ['is_processed', 'created_at']
     
     fieldsets = (
-        ('Test tanlash', {
-            'fields': ('quiz', 'score')
+        ('Savol', {
+            'fields': ('quiz', 'question_text', 'order')
         }),
-        ('Savollar', {
-            'fields': ('question_text',),
-            'description': '''
-                <strong>Format:</strong><br>
-                Savol matni?<br>
-                =====<br>
-                Variant 1<br>
-                =====<br>
-                Variant 2<br>
-                =====<br>
-                #To'g'ri variant (# belgisi bilan)<br>
-                =====<br>
-                Variant 4<br>
-                +++++<br>
-                Keyingi savol...
-            '''
-        }),
-        ('Holat', {
-            'fields': ('is_processed', 'created_at'),
-            'classes': ('collapse',)
+        ('Ball va Shkala', {
+            'fields': ('score', 'psychological_scale'),
+            'description': (
+                'Standart testda faqat "score" ishlatiladi. '
+                'Psixologik testda "psychological_scale" tanlash majburiy.'
+            )
         }),
     )
     
-    def preview(self, obj):
-        text = obj.question_text[:100] + '...' if len(obj.question_text) > 100 else obj.question_text
+    def question_preview(self, obj):
+        """Savol previewi"""
+        text = obj.question_text[:100]
+        if len(obj.question_text) > 100:
+            text += '...'
         return text
-    preview.short_description = 'Ko\'rinish'
     
-    def has_change_permission(self, request, obj=None):
-        # Qayta ishlangan QuestionText'ni tahrirlashga ruxsat bermaslik
-        if obj and obj.is_processed:
-            return False
-        return super().has_change_permission(request, obj)
+    question_preview.short_description = 'Savol'
+    
+    def quiz_type_display(self, obj):
+        """Test turi"""
+        if obj.quiz.is_psychological():
+            return format_html('<span style="color:#7C3AED;">🧠 Psixologik</span>')
+        return format_html('<span style="color:#4F46E5;">📝 Standart</span>')
+    
+    quiz_type_display.short_description = 'Test turi'
+    
+    def options_count(self, obj):
+        """Javoblar soni"""
+        return obj.options.count()
+    
+    options_count.short_description = 'Javoblar'
 
 
 @admin.register(Option)
 class OptionAdmin(admin.ModelAdmin):
-    list_display = ['question_short', 'option_text', 'is_correct_display']
-    search_fields = ['option_text', 'question__question_text']
-    list_filter = ['is_correct', 'question__quiz']
+    """Javob varianti admin"""
     
-    def question_short(self, obj):
-        return f"{obj.question.quiz.title} - {obj.question.question_text[:30]}..."
-    question_short.short_description = 'Savol'
+    list_display = (
+        'option_text',
+        'question',
+        'quiz_type_display',
+        'is_correct',
+        'psychological_score',
+        'order'
+    )
     
-    def is_correct_display(self, obj):
-        if obj.is_correct:
-            return format_html('<span style="color: green; font-weight: bold;">✓ To\'g\'ri</span>')
-        return format_html('<span style="color: red;">✗ Noto\'g\'ri</span>')
-    is_correct_display.short_description = 'Holat'
+    list_filter = (
+        'question__quiz__quiz_type',
+        'is_correct',
+    )
+    
+    search_fields = ('option_text', 'question__question_text')
+    
+    def quiz_type_display(self, obj):
+        """Test turi"""
+        if obj.question.quiz.is_psychological():
+            return format_html(
+                '<span style="color:#7C3AED;">🧠 Psixologik ({} ball)</span>',
+                obj.psychological_score
+            )
+        
+        status = '✓ To\'g\'ri' if obj.is_correct else '✗ Noto\'g\'ri'
+        color = '#10B981' if obj.is_correct else '#EF4444'
+        return format_html(
+            '<span style="color:{};">📝 {} </span>',
+            color,
+            status
+        )
+    
+    quiz_type_display.short_description = 'Holat'
+
+
+@admin.register(QuestionText)
+class QuestionTextAdmin(admin.ModelAdmin):
+    """Bulk upload admin"""
+    
+    list_display = ('quiz', 'status_display', 'score', 'created_at')
+    list_filter = ('is_processed', 'quiz')
+    readonly_fields = ('is_processed',)
+    
+    def status_display(self, obj):
+        """Holat"""
+        if obj.is_processed:
+            return format_html(
+                '<span style="color:#10B981;font-weight:bold;">✓ Qayta ishlangan</span>'
+            )
+        return format_html(
+            '<span style="color:#F59E0B;font-weight:bold;">⏳ Kutilmoqda</span>'
+        )
+    
+    status_display.short_description = 'Holat'
 
 
 @admin.register(QuizAttempt)
 class QuizAttemptAdmin(admin.ModelAdmin):
-    list_display = [
-        'student_name',
-        'quiz', 
-        'status_display',
-        'progress',
-        'started_at', 
-        'completed_at', 
-        'time_taken_display'
-    ]
-    list_filter = ['status', 'quiz', 'started_at']
-    search_fields = ['student__student_name', 'quiz__title']
-    readonly_fields = ['started_at', 'completed_at', 'time_taken', 'status']
-    inlines = [UserResponseInline]
+    """Urinish admin"""
     
-    def student_name(self, obj):
-        return obj.student.student_name
-    student_name.short_description = 'Talaba'
+    list_display = (
+        'student',
+        'quiz',
+        'quiz_type_display',
+        'status',
+        'started_at',
+        'completed_at',
+        'time_display',
+        'view_result'
+    )
     
-    def status_display(self, obj):
-        colors = {
-            'in_progress': 'orange',
-            'completed': 'green',
-            'expired': 'red'
-        }
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            colors.get(obj.status, 'gray'),
-            obj.get_status_display()
-        )
-    status_display.short_description = 'Holat'
+    list_filter = (
+        'status',
+        'quiz__quiz_type',
+        'quiz',
+        'started_at',
+    )
     
-    def progress(self, obj):
-        total = obj.quiz.get_total_questions()
-        answered = obj.responses.count()
-        percent = (answered / total * 100) if total > 0 else 0
-        return format_html(
-            '<div style="width: 100px; background: #f0f0f0; border-radius: 3px;">'
-            '<div style="width: {}%; background: #4CAF50; height: 20px; border-radius: 3px; '
-            'text-align: center; color: white; font-size: 11px; line-height: 20px;">{}/{}</div>'
-            '</div>',
-            percent, answered, total
-        )
-    progress.short_description = 'Jarayon'
+    search_fields = (
+        'student__student_name',
+        'student__student_id_number',
+        'quiz__title'
+    )
     
-    def time_taken_display(self, obj):
+    readonly_fields = (
+        'started_at',
+        'completed_at',
+        'time_taken'
+    )
+    
+    def quiz_type_display(self, obj):
+        """Test turi"""
+        if obj.quiz.is_psychological():
+            return '🧠 Psixologik'
+        return '📝 Standart'
+    
+    quiz_type_display.short_description = 'Tur'
+    
+    def time_display(self, obj):
+        """Vaqt ko'rsatish"""
         if obj.time_taken:
             minutes = obj.time_taken // 60
             seconds = obj.time_taken % 60
             return f"{minutes}m {seconds}s"
-        elif obj.status == 'in_progress':
-            return format_html('<span style="color: orange;">⏱ Davom etmoqda</span>')
         return '-'
-    time_taken_display.short_description = 'Sarflangan vaqt'
-
-
-@admin.register(UserResponse)
-class UserResponseAdmin(admin.ModelAdmin):
-    list_display = [
-        'student_name',
-        'question_short', 
-        'selected_option', 
-        'is_correct_display',
-        'answered_at'
-    ]
-    list_filter = ['is_correct', 'answered_at', 'attempt__quiz']
-    search_fields = [
-        'attempt__student__student_name', 
-        'question__question_text'
-    ]
-    readonly_fields = ['answered_at', 'is_correct']
     
-    def student_name(self, obj):
-        return obj.attempt.student.student_name
-    student_name.short_description = 'Talaba'
+    time_display.short_description = 'Vaqt'
     
-    def question_short(self, obj):
-        return obj.question.question_text[:50] + '...' if len(obj.question.question_text) > 50 else obj.question.question_text
-    question_short.short_description = 'Savol'
+    def view_result(self, obj):
+        """Natijani ko'rish"""
+        if obj.status == 'completed':
+            if obj.quiz.is_standard() and hasattr(obj, 'result'):
+                return format_html(
+                    '<a href="/admin/main/result/{}/change/" '
+                    'style="color:#4F46E5;font-weight:bold;">📊 Natija</a>',
+                    obj.result.id
+                )
+            elif obj.quiz.is_psychological() and hasattr(obj, 'psychological_result'):
+                return format_html(
+                    '<a href="/admin/main/psychologicalresult/{}/change/" '
+                    'style="color:#7C3AED;font-weight:bold;">🧠 Natija</a>',
+                    obj.psychological_result.id
+                )
+        return '-'
     
-    def is_correct_display(self, obj):
-        if obj.is_correct:
-            return format_html('<span style="color: green; font-weight: bold;">✓</span>')
-        return format_html('<span style="color: red; font-weight: bold;">✗</span>')
-    is_correct_display.short_description = 'Natija'
+    view_result.short_description = 'Natija'
 
 
 @admin.register(Result)
 class ResultAdmin(admin.ModelAdmin):
-    list_display = [
+    """Standart test natijasi admin"""
+    
+    list_display = (
         'student_name',
-        'quiz_name', 
-        # 'percentage_display',
+        'quiz',
+        'percentage_display',
         'grade_display',
         'passed_display',
-        'correct_answers', 
-        'total_questions', 
         'created_at'
-    ]
-    list_filter = ['passed', 'created_at', 'attempt__quiz']
-    search_fields = [
-        'attempt__student__student_name', 
+    )
+    
+    list_filter = (
+        'passed',
+        'attempt__quiz',
+        'created_at',
+    )
+    
+    search_fields = (
+        'attempt__student__student_name',
         'attempt__quiz__title'
-    ]
-    readonly_fields = [
-        'attempt', 'total_questions', 'correct_answers', 'wrong_answers',
-        'unanswered', 'total_score', 'max_score', 'percentage', 
-        'passed', 'created_at'
-    ]
+    )
+    
+    readonly_fields = (
+        'attempt',
+        'total_questions',
+        'correct_answers',
+        'wrong_answers',
+        'unanswered',
+        'total_score',
+        'max_score',
+        'percentage',
+        'passed'
+    )
+    
+    def student_name(self, obj):
+        """Talaba ismi"""
+        return obj.attempt.student.student_name
+    
+    student_name.short_description = 'Talaba'
+    
+    def quiz(self, obj):
+        """Test nomi"""
+        return obj.attempt.quiz.title
+    
+    quiz.short_description = 'Test'
+    
+    def percentage_display(self, obj):
+        """Foiz ko'rsatish"""
+        color = '#10B981' if obj.passed else '#EF4444'
+        return format_html(
+            '<strong style="color:{}; font-size:16px;">{:.1f}%</strong>',
+            color,
+            obj.percentage
+        )
+    
+    percentage_display.short_description = 'Natija'
+    
+    def grade_display(self, obj):
+        """Baho"""
+        grade = obj.get_grade()
+        colors = {5: '#10B981', 4: '#3B82F6', 3: '#F59E0B', 2: '#EF4444'}
+        return format_html(
+            '<span style="background:{}; color:white; padding:4px 12px; '
+            'border-radius:12px; font-weight:bold;">{}</span>',
+            colors.get(grade, '#6B7280'),
+            grade
+        )
+    
+    grade_display.short_description = 'Baho'
+    
+    def passed_display(self, obj):
+        """O'tdi/O'tmadi"""
+        if obj.passed:
+            return format_html(
+                '<span style="color:#10B981;font-weight:bold;">✓ O\'tdi</span>'
+            )
+        return format_html(
+            '<span style="color:#EF4444;font-weight:bold;">✗ O\'tmadi</span>'
+        )
+    
+    passed_display.short_description = 'Holat'
+
+
+@admin.register(PsychologicalResult)
+class PsychologicalResultAdmin(admin.ModelAdmin):
+    """Psixologik test natijasi admin"""
+    
+    list_display = (
+        'student_name',
+        'quiz',
+        'answered_display',
+        'scales_summary',
+        'created_at'
+    )
+    
+    list_filter = (
+        'attempt__quiz',
+        'created_at',
+    )
+    
+    search_fields = (
+        'attempt__student__student_name',
+        'attempt__quiz__title'
+    )
+    
+    readonly_fields = (
+        'attempt',
+        'total_questions',
+        'answered_questions',
+        'unanswered'
+    )
+    
+    inlines = [PsychologicalScaleResultInline]
+    
+    def student_name(self, obj):
+        """Talaba ismi"""
+        return obj.attempt.student.student_name
+    
+    student_name.short_description = 'Talaba'
+    
+    def quiz(self, obj):
+        """Test nomi"""
+        return obj.attempt.quiz.title
+    
+    quiz.short_description = 'Test'
+    
+    def answered_display(self, obj):
+        """Javob berilgan savollar"""
+        return format_html(
+            '<strong>{}</strong> / {} ta',
+            obj.answered_questions,
+            obj.total_questions
+        )
+    
+    answered_display.short_description = 'Javoblar'
+    
+    def scales_summary(self, obj):
+        """Shkalalar qisqacha"""
+        results = obj.scale_results.select_related('scale', 'category')
+        if not results:
+            return '-'
+        
+        summary = []
+        for sr in results:
+            if sr.category:
+                summary.append(f"{sr.scale.name}: {sr.total_score} ({sr.category.name})")
+        
+        return ', '.join(summary) if summary else '-'
+    
+    scales_summary.short_description = 'Natijalar'
+
+
+# ==================== USER RESPONSE ====================
+
+@admin.register(UserResponse)
+class UserResponseAdmin(admin.ModelAdmin):
+    """Javob admin (faqat ko'rish uchun)"""
+    
+    list_display = (
+        'student_name',
+        'quiz_name',
+        'question_preview',
+        'response_display',
+        'answered_at'
+    )
+    
+    list_filter = (
+        'attempt__quiz__quiz_type',
+        'is_correct',
+        'answered_at'
+    )
+    
+    search_fields = (
+        'attempt__student__student_name',
+        'question__question_text'
+    )
+    
+    readonly_fields = (
+        'attempt',
+        'question',
+        'selected_option',
+        'is_correct',
+        'earned_score',
+        'answered_at'
+    )
     
     def student_name(self, obj):
         return obj.attempt.student.student_name
+    
     student_name.short_description = 'Talaba'
     
     def quiz_name(self, obj):
         return obj.attempt.quiz.title
+    
     quiz_name.short_description = 'Test'
     
-    def percentage_display(self, obj):
-        color = 'green' if obj.passed else 'red'
-        # return format_html(
-        #     '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-        #     color, float(obj.percentage)
-        # )
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-            color, float(obj.percentage)
-        )
-
-    percentage_display.short_description = 'Foiz'
+    def question_preview(self, obj):
+        text = obj.question.question_text[:50]
+        if len(obj.question.question_text) > 50:
+            text += '...'
+        return text
     
-    def grade_display(self, obj):
-        grade = obj.get_grade()
-        colors = {5: 'green', 4: 'blue', 3: 'orange', 2: 'red'}
-        return format_html(
-            '<span style="color: {}; font-weight: bold; font-size: 16px;">{}</span>',
-            colors.get(grade, 'gray'), grade
-        )
-    grade_display.short_description = 'Baho'
+    question_preview.short_description = 'Savol'
     
-    def passed_display(self, obj):
-        if obj.passed:
+    def response_display(self, obj):
+        """Javob ko'rsatish"""
+        if not obj.selected_option:
+            return format_html('<span style="color:#6B7280;">-</span>')
+        
+        if obj.attempt.quiz.is_psychological():
             return format_html(
-                '<span style="color: green; font-weight: bold;">✓ O\'tdi</span>'
+                '<span style="color:#7C3AED;">{} ({} ball)</span>',
+                obj.selected_option.option_text[:30],
+                obj.earned_score
             )
-        return format_html(
-            '<span style="color: red; font-weight: bold;">✗ O\'tmadi</span>'
-        )
-    passed_display.short_description = 'Holat'
+        else:
+            color = '#10B981' if obj.is_correct else '#EF4444'
+            icon = '✓' if obj.is_correct else '✗'
+            return format_html(
+                '<span style="color:{};font-weight:bold;">{} {}</span>',
+                color,
+                icon,
+                obj.selected_option.option_text[:30]
+            )
     
-    def has_add_permission(self, request):
-        return False  # Natijalar avtomatik yaratiladi
+    response_display.short_description = 'Javob'
