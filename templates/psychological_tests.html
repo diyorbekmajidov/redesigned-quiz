@@ -1,0 +1,327 @@
+<!-- ============================================
+     QUIZ/PSYCHOLOGICAL_TESTS.HTML - YANGI
+     MAQSAD:
+     1. Faqat psixologik testlar ro'yxati
+     2. Shkalalar va kategoriyalar ko'rsatish
+     3. Test haqida ma'lumot
+     4. Start/Continue button
+     ============================================ -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Psixologik Testlar{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<section class="page-header bg-gradient-purple text-white py-5 mb-5" style="border-radius: 0 0 30px 30px;">
+    <div class="container">
+        <div class="text-center">
+            <div class="mb-3">
+                <i class="fas fa-brain fa-4x"></i>
+            </div>
+            <h1 class="display-4 fw-bold mb-3">Psixologik Testlar</h1>
+            <p class="lead mb-0">
+                O'zingizni baholang va psixologik holatni aniqlang
+            </p>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Info Banner -->
+    <div class="alert alert-info mb-5" role="alert">
+        <div class="d-flex align-items-start">
+            <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+            <div>
+                <h5 class="alert-heading">Psixologik Testlar Haqida</h5>
+                <p class="mb-0">
+                    Psixologik testlar sizning hissiy va psixologik holatni baholashga yordam beradi. 
+                    Testlarda to'g'ri yoki noto'g'ri javoblar yo'q - faqat sizning hozirgi holatni aks ettiruvchi javoblar.
+                    Natijalar turli shkalalar (masalan: Хавотир, Депрессия) bo'yicha ball bilan ko'rsatiladi.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    {% if quizzes %}
+        <!-- Tests Grid -->
+        <div class="row g-4">
+            {% for quiz in quizzes %}
+            <div class="col-md-6 col-lg-4">
+                <div class="quiz-card psychological-test">
+                    <!-- Header -->
+                    <div class="quiz-header">
+                        <div class="mb-2">
+                            <span class="test-badge psychological">
+                                🧠 Psixologik Test
+                            </span>
+                        </div>
+                        <h5 class="quiz-title">{{ quiz.title }}</h5>
+                    </div>
+                    
+                    <!-- Body -->
+                    <div class="quiz-body">
+                        <p class="quiz-description">
+                            {{ quiz.description|truncatewords:20 }}
+                        </p>
+                        
+                        <!-- Shkalalar -->
+                        <div class="quiz-scales mb-3">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-chart-line me-1"></i>
+                                Shkalalar:
+                            </h6>
+                            <div class="scales-list">
+                                {% for scale in quiz.psychological_scales.all %}
+                                <span class="badge bg-light text-dark border me-1 mb-1">
+                                    {{ scale.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Meta Info -->
+                        <div class="quiz-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-question-circle text-purple"></i>
+                                <span>{{ quiz.get_total_questions }} savol</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-clock text-purple"></i>
+                                <span>{{ quiz.time_limit }} daqiqa</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-chart-bar text-purple"></i>
+                                <span>{{ quiz.psychological_scales.count }} shkala</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Student Attempt Status -->
+                        {% if quiz.student_attempt %}
+                            {% if quiz.student_attempt.status == 'in_progress' %}
+                                <!-- In Progress -->
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Test boshlangan
+                                </div>
+                                <a href="{% url 'quiz_take' quiz.id %}" 
+                                   class="btn btn-warning w-100 mt-3">
+                                    <i class="fas fa-play me-2"></i>Davom Ettirish
+                                </a>
+                            {% elif quiz.student_attempt.status == 'completed' %}
+                                <!-- Completed -->
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Test topshirilgan
+                                </div>
+                                <div class="d-grid gap-2 mt-3">
+                                    <a href="{% url 'quiz_result' quiz.student_attempt.id %}" 
+                                       class="btn btn-outline-success">
+                                        <i class="fas fa-eye me-2"></i>Natijani Ko'rish
+                                    </a>
+                                    <a href="{% url 'quiz_detail' quiz.id %}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-redo me-2"></i>Qayta Topshirish
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- Not Started -->
+                            <a href="{% url 'quiz_detail' quiz.id %}" 
+                               class="btn btn-purple w-100 mt-3">
+                                <i class="fas fa-play-circle me-2"></i>Boshlash
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-brain fa-5x text-muted" style="opacity: 0.3;"></i>
+            </div>
+            <h3 class="text-muted mb-3">Hozircha psixologik testlar mavjud emas</h3>
+            <p class="text-muted mb-4">
+                Yangi psixologik testlar qo'shilganda sizga xabar beramiz
+            </p>
+            <a href="{% url 'quiz_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>
+                Barcha Testlar
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: all 0.3s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .quiz-card.psychological-test {
+        border-top: 4px solid var(--purple-color);
+    }
+    
+    .quiz-card:hover {
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+        transform: translateY(-10px);
+        border-top-color: var(--purple-light);
+    }
+    
+    .quiz-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(167, 139, 250, 0.05));
+    }
+    
+    .quiz-title {
+        color: #1F2937;
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.25rem;
+    }
+    
+    .quiz-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .quiz-description {
+        color: #6B7280;
+        margin-bottom: 1rem;
+        flex-grow: 1;
+    }
+    
+    .quiz-scales {
+        background: #F9FAFB;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    .quiz-scales h6 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .scales-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .quiz-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #E5E7EB;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #6B7280;
+        font-size: 0.95rem;
+    }
+    
+    .meta-item i {
+        font-size: 1.1rem;
+    }
+    
+    .empty-state {
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    /* Alert customization */
+    .alert-info {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(124, 58, 237, 0.05));
+        border-left: 4px solid var(--purple-color);
+        border-radius: 12px;
+    }
+    
+    /* Pagination */
+    .page-link {
+        color: var(--purple-color);
+        border-radius: 8px;
+        margin: 0 3px;
+    }
+    
+    .page-link:hover {
+        background-color: var(--purple-color);
+        color: white;
+        border-color: var(--purple-color);
+    }
+    
+    .page-item.active .page-link {
+        background-color: var(--purple-color);
+        border-color: var(--purple-color);
+    }
+</style>
+{% endblock %}
+
+<!-- 
+✨ YANGI TEMPLATE XULOSASI:
+1. Faqat psixologik testlar
+2. Shkalalar ro'yxati har bir test uchun
+3. Test meta info (savollar, vaqt, shkalalar)
+4. Student attempt status (boshlangan/topshirilgan/boshlanmagan)
+5. Purple gradient theme
+6. Empty state
+7. Info banner psixologik testlar haqida
+8. Responsive grid layout
+-->

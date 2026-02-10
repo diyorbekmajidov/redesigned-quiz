@@ -1,0 +1,323 @@
+<!-- ============================================
+     STUDENT/PSYCHOLOGICAL_RESULTS.HTML - YANGI
+     MAQSAD:
+     1. Faqat psixologik testlar natijalarini ko'rsatish
+     2. Har bir natija uchun shkalalar bilan
+     3. Kategoriya ranglari
+     4. Pagination
+     ============================================ -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Psixologik Test Natijalari{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<section class="page-header bg-gradient-purple text-white py-5 mb-5" style="border-radius: 0 0 30px 30px;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold">
+                    <i class="fas fa-brain me-3"></i>
+                    Psixologik Test Natijalari
+                </h1>
+                <p class="lead mb-0">
+                    Barcha psixologik testlar natijalarini ko'rish va tahlil qilish
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'psychological_tests' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Yangi Test Topshirish
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    {% if results %}
+        <!-- Results List -->
+        <div class="row g-4">
+            {% for result in results %}
+            <div class="col-12">
+                <div class="card psychological-result-card">
+                    <div class="card-header bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-purple me-2">
+                                        <i class="fas fa-brain me-1"></i>Psixologik
+                                    </span>
+                                    <h5 class="mb-0">{{ result.attempt.quiz.title }}</h5>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ result.created_at|date:"d M Y, H:i" }}
+                                    <span class="ms-3">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {% widthratio result.attempt.time_taken 60 1 %} daqiqa
+                                    </span>
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <a href="{% url 'quiz_result' result.attempt.id %}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-eye me-2"></i>Batafsil Ko'rish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Summary Stats -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="stat-mini">
+                                    <i class="fas fa-question-circle text-primary"></i>
+                                    <span class="ms-2">
+                                        <strong>{{ result.total_questions }}</strong> savol
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-mini">
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    <span class="ms-2">
+                                        <strong>{{ result.answered_questions }}</strong> javob berilgan
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-mini">
+                                    <i class="fas fa-chart-line text-purple"></i>
+                                    <span class="ms-2">
+                                        <strong>{{ result.scale_results_list.count }}</strong> shkala
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Scales Results -->
+                        <h6 class="mb-3">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Shkalalar Bo'yicha Natijalar
+                        </h6>
+                        
+                        <div class="row g-3">
+                            {% for scale_result in result.scale_results_list %}
+                            <div class="col-md-6">
+                                <div class="scale-badge-card {{ scale_result.category.color }}">
+                                    <div class="scale-name">
+                                        <strong>{{ scale_result.scale.name }}</strong>
+                                    </div>
+                                    <div class="scale-score mt-2">
+                                        <span class="score-number">{{ scale_result.total_score }}</span>
+                                        <span class="score-max">/ 21 ball</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-{{ scale_result.category.color }}">
+                                            {% if scale_result.category.color == 'green' %}
+                                                🟢 {{ scale_result.category.name }}
+                                            {% elif scale_result.category.color == 'yellow' %}
+                                                🟡 {{ scale_result.category.name }}
+                                            {% elif scale_result.category.color == 'orange' %}
+                                                🟠 {{ scale_result.category.name }}
+                                            {% else %}
+                                                🔴 {{ scale_result.category.name }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <!-- Mini progress bar -->
+                                    <div class="progress mt-2" style="height: 6px;">
+                                        {% widthratio scale_result.total_score 21 100 as percentage %}
+                                        <div class="progress-bar bg-{{ scale_result.category.color }}" 
+                                             style="width: {{ percentage }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-brain fa-5x text-muted" style="opacity: 0.3;"></i>
+            </div>
+            <h3 class="text-muted mb-3">Hozircha psixologik test topshirmadingiz</h3>
+            <p class="text-muted mb-4">
+                Psixologik testlar yordamida o'zingizni baholang va natijalarni tahlil qiling
+            </p>
+            <a href="{% url 'psychological_tests' %}" class="btn btn-purple btn-lg">
+                <i class="fas fa-brain me-2"></i>
+                Psixologik Testlar
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .psychological-result-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: all 0.3s;
+        overflow: hidden;
+    }
+    
+    .psychological-result-card:hover {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        transform: translateY(-5px);
+    }
+    
+    .stat-mini {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: #F9FAFB;
+        border-radius: 8px;
+    }
+    
+    .scale-badge-card {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 12px;
+        border-left: 5px solid;
+        transition: all 0.3s;
+    }
+    
+    .scale-badge-card.green {
+        border-color: var(--category-green);
+    }
+    
+    .scale-badge-card.yellow {
+        border-color: var(--category-yellow);
+    }
+    
+    .scale-badge-card.orange {
+        border-color: var(--category-orange);
+    }
+    
+    .scale-badge-card.red {
+        border-color: var(--category-red);
+    }
+    
+    .scale-badge-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .scale-name {
+        font-size: 1rem;
+        color: #1F2937;
+    }
+    
+    .scale-score {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .score-number {
+        color: #1F2937;
+    }
+    
+    .score-max {
+        font-size: 1rem;
+        color: #6B7280;
+        font-weight: normal;
+    }
+    
+    .empty-state {
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .page-link {
+        color: var(--purple-color);
+        border: 1px solid #E5E7EB;
+        margin: 0 3px;
+        border-radius: 8px;
+    }
+    
+    .page-link:hover {
+        background-color: var(--purple-color);
+        color: white;
+        border-color: var(--purple-color);
+    }
+    
+    .page-item.active .page-link {
+        background-color: var(--purple-color);
+        border-color: var(--purple-color);
+    }
+</style>
+{% endblock %}
+
+<!-- 
+✨ YANGI TEMPLATE XULOSASI:
+1. Faqat psixologik testlar natijalari
+2. Har bir natija uchun card
+3. Shkalalar va kategoriyalar
+4. Rang ko'rsatkichlari (border-left)
+5. Progress bar har bir shkala uchun
+6. Empty state (agar natija bo'lmasa)
+7. Pagination support
+8. Batafsil ko'rish tugmasi
+-->

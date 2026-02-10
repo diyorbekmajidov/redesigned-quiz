@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import  QuizResultView, QuizTakeView, QuizListView, QuizDetailView, QuizListView, StudentDashboardView, HomeView, StudentProfileView, StudentStatisticsView,ResultsHistoryView
+from .views import  QuizResultView, QuizTakeView, QuizListView, QuizDetailView, QuizListView, StudentDashboardView, HomeView, StudentProfileView, StudentStatisticsView,ResultsHistoryView, PsychologicalTestsView, PsychologicalResultsView
 
 
 urlpatterns = [
@@ -8,8 +8,12 @@ urlpatterns = [
     path('profile/', StudentProfileView.as_view(), name='profile'),
     path('statistics/', StudentStatisticsView.as_view(), name='statistics'),
     path('results/', ResultsHistoryView.as_view(), name='results'),
-    path('quizzes/', QuizListView.as_view(), name='list'),
-    path('quizzes/<int:pk>/', QuizDetailView.as_view(), name='detail'),
-    path('quizzes/<int:pk>/take/', QuizTakeView.as_view(), name='take'),
-    path('<int:attempt_id>/result/', QuizResultView.as_view(),name='result'),
+    path('psychological-results/', PsychologicalResultsView.as_view(), name='psychological_results'),
+
+
+    path('quiz/', QuizListView.as_view(), name='quiz_list'),
+    path('quiz/<int:pk>/', QuizDetailView.as_view(), name='quiz_detail'),
+    path('quiz/<int:pk>/take/', QuizTakeView.as_view(), name='quiz_take'),
+    path('quiz/<int:attempt_id>/result/', QuizResultView.as_view(), name='quiz_result'),
+    path('quiz/psychological/', PsychologicalTestsView.as_view(), name='psychological_tests'),
 ]

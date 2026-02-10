@@ -1,178 +1,431 @@
+<!-- ============================================
+     STUDENT/DASHBOARD.HTML - YANGILANGAN
+     O'ZGARISHLAR:
+     1. Psixologik testlar statistikasi qo'shildi
+     2. Aralash natijalar (standart + psixologik)
+     3. Test turi ikonalari (📝/🧠)
+     4. Psixologik testlar soni
+     5. Quick links psixologik testlarga
+     ============================================ -->
+
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - {{ student.student_name }}{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="mb-0">
-            <i class="fas fa-home me-2"></i>
-            Xush kelibsiz, {{ student.student_name }}!
-        </h2>
-        <p class="text-muted">{{ student.faculty }} - {{ student.get_group_name }}</p>
+<!-- Header -->
+<section class="dashboard-header bg-gradient-primary text-white py-5 mb-5" style="border-radius: 0 0 30px 30px;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold">
+                    Xush kelibsiz, {{ student.student_name|truncatewords:3 }}! 👋
+                </h1>
+                <p class="lead mb-0">
+                    {{ student.faculty }} - {{ student.level }}
+                </p>
+                <!-- ✨ YANGI: Student status -->
+                <div class="mt-3">
+                    <span class="badge bg-white text-primary me-2">
+                        <i class="fas fa-graduation-cap me-1"></i>{{ student.education_type }}
+                    </span>
+                    <span class="badge bg-white text-primary me-2">
+                        {% comment %} <i class="fas fa-{{ student.gender|lower == 'ayol'|yesno:'female,male' }} me-1"></i>{{ student.gender }} {% endcomment %}
+                    </span>
+                    <span class="badge bg-white text-primary">
+                        <i class="fas fa-credit-card me-1"></i>{{ student.paymentForm }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <!-- ✨ Student rasmi (HEMIS) -->
+                {% if student.student_imeg %}
+                    <img src="{{ student.student_imeg }}" alt="{{ student.student_name }}" 
+                         class="rounded-circle" 
+                         style="width: 150px; height: 150px; object-fit: cover; border: 5px solid white; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                {% else %}
+                    <div class="rounded-circle bg-white text-primary d-inline-flex align-items-center justify-content-center" 
+                         style="width: 150px; height: 150px; font-size: 4rem; font-weight: bold; border: 5px solid white; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                        {{ student.student_name|first|upper }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-</div>
+</section>
 
 <!-- Stats Cards -->
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon primary me-3">
-                    <i class="fas fa-clipboard-list"></i>
-                </div>
-                <div>
-                    <h3 class="mb-0">{{ total_quizzes }}</h3>
-                    <small class="text-muted">Mavjud testlar</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon success me-3">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div>
-                    <h3 class="mb-0">{{ passed_count }}</h3>
-                    <small class="text-muted">O'tgan testlar</small>
+<div class="container mb-5">
+    <div class="row g-4">
+        <!-- Total Quizzes -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon primary me-3">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ total_quizzes }}</h3>
+                        <p class="text-muted mb-0">Mavjud Testlar</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon danger me-3">
-                    <i class="fas fa-times-circle"></i>
-                </div>
-                <div>
-                    <h3 class="mb-0">{{ failed_count }}</h3>
-                    <small class="text-muted">O'tmagan testlar</small>
+        
+        <!-- ✨ YANGI: Standart testlar -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon success me-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ standard_passed_count }}</h3>
+                        <p class="text-muted mb-0">O'tgan (Standart)</p>
+                        <small class="text-muted">{{ standard_results_count }} dan</small>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon warning me-3">
-                    <i class="fas fa-percent"></i>
+        
+        <!-- ✨ YANGI: Psixologik testlar -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon purple me-3">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ psychological_results_count }}</h3>
+                        <p class="text-muted mb-0">Psixologik Testlar</p>
+                        <small class="text-muted">Topshirilgan</small>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="mb-0">{{ average_percentage }}%</h3>
-                    <small class="text-muted">O'rtacha ball</small>
+            </div>
+        </div>
+        
+        <!-- Average Score (faqat standart) -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon warning me-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ average_percentage }}%</h3>
+                        <p class="text-muted mb-0">O'rtacha Ball</p>
+                        <small class="text-muted">Standart testlar</small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Current Attempt -->
+<!-- Current Attempt (agar mavjud bo'lsa) -->
 {% if current_attempt %}
-<div class="alert alert-info d-flex align-items-center justify-content-between" role="alert">
-    <div>
-        <i class="fas fa-clock me-2"></i>
-        <strong>Davom etayotgan test:</strong> {{ current_attempt.quiz.title }}
+<div class="container mb-5">
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="fas fa-info-circle fa-2x me-3"></i>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-1">Yakunlanmagan Test Mavjud!</h5>
+            <p class="mb-2">
+                <!-- ✨ Test turi ko'rsatish -->
+                {% if current_attempt.quiz.is_psychological %}
+                    <span class="badge bg-purple me-2">🧠 Psixologik</span>
+                {% else %}
+                    <span class="badge bg-primary me-2">📝 Standart</span>
+                {% endif %}
+                {{ current_attempt.quiz.title }}
+            </p>
+            <a href="{% url 'quiz_take' current_attempt.quiz.id %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-play me-1"></i>Davom Ettirish
+            </a>
+        </div>
     </div>
-    <a href="{% url 'take' current_attempt.quiz.id %}" class="btn btn-primary btn-sm">
-        Davom ettirish
-    </a>
 </div>
 {% endif %}
 
-<!-- Available Quizzes & Recent Results -->
-<div class="row g-4">
-    <!-- Available Quizzes -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-clipboard-list me-2"></i>
-                Mavjud Testlar
-            </div>
-            <div class="card-body">
-                {% if available_quizzes %}
-                    <div class="row g-3">
-                        {% for quiz in available_quizzes|slice:":6" %}
-                        <div class="col-md-6">
-                            <div class="card border">
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ quiz.title }}</h6>
-                                    <p class="card-text text-muted small">
-                                        {{ quiz.description|truncatewords:15 }}
+<!-- Main Content -->
+<div class="container">
+    <div class="row g-4">
+        <!-- Left Column: Available Quizzes -->
+        <div class="col-lg-8">
+            <!-- ✨ Mavjud Testlar (ikki turi) -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Mavjud Testlar
+                        </h5>
+                        <a href="{% url 'quiz_list' %}" class="btn btn-sm btn-outline-primary">
+                            Barchasini Ko'rish
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if available_quizzes %}
+                        <div class="row g-3">
+                            {% for quiz in available_quizzes %}
+                            <div class="col-md-6">
+                                <div class="quiz-card-mini">
+                                    <!-- ✨ Test turi badge -->
+                                    <div class="mb-2">
+                                        {% if quiz.is_psychological %}
+                                            <span class="test-badge psychological">
+                                                🧠 Psixologik
+                                            </span>
+                                        {% else %}
+                                            <span class="test-badge standard">
+                                                📝 Standart
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <h6 class="mb-2">{{ quiz.title|truncatewords:8 }}</h6>
+                                    <p class="text-muted small mb-3">
+                                        {{ quiz.description|truncatewords:10 }}
                                     </p>
+                                    
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <div>
+                                        <div class="quiz-meta-small">
                                             <small class="text-muted">
-                                                <i class="fas fa-clock me-1"></i>{{ quiz.time_limit }} daqiqa
+                                                <i class="fas fa-question-circle me-1"></i>
+                                                {{ quiz.get_total_questions }} savol
                                             </small>
-                                            <br>
-                                            <small class="text-muted">
-                                                <i class="fas fa-question-circle me-1"></i>{{ quiz.get_total_questions }} savol
+                                            <small class="text-muted ms-2">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ quiz.time_limit }}min
                                             </small>
                                         </div>
-                                        <a href="{% url 'detail' quiz.id %}" class="btn btn-sm btn-primary">
+                                        <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-sm btn-primary">
                                             Boshlash
                                         </a>
                                     </div>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'list' %}" class="btn btn-outline-primary">
-                            Barcha testlarni ko'rish
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Hozircha test mavjud emas</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- ✨ YANGI: Oxirgi Natijalar (Aralash) -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            Oxirgi Natijalar
+                        </h5>
+                        <a href="{% url 'results' %}" class="btn btn-sm btn-outline-primary">
+                            Barchasini Ko'rish
                         </a>
                     </div>
-                {% else %}
-                    <p class="text-center text-muted">Hozircha testlar mavjud emas</p>
-                {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if recent_results %}
+                        <div class="list-group list-group-flush">
+                            {% for result in recent_results %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <!-- ✨ Test turi va nomi -->
+                                        <div class="mb-2">
+                                            {% if result.attempt.quiz.is_psychological %}
+                                                <span class="badge bg-purple me-2">🧠 Psixologik</span>
+                                            {% else %}
+                                                <span class="badge bg-primary me-2">📝 Standart</span>
+                                            {% endif %}
+                                            <strong>{{ result.attempt.quiz.title|truncatewords:6 }}</strong>
+                                        </div>
+                                        
+                                        <!-- ✨ Natija (test turiga qarab) -->
+                                        <div class="mt-2">
+                                            {% if result.attempt.quiz.is_standard %}
+                                                <!-- Standart test natijasi -->
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                                                        <div class="progress-bar {% if result.passed %}bg-success{% else %}bg-danger{% endif %}" 
+                                                             style="width: {{ result.percentage }}%">
+                                                        </div>
+                                                    </div>
+                                                    <span class="{% if result.passed %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                                        {{ result.percentage }}%
+                                                    </span>
+                                                </div>
+                                            {% else %}
+                                                <!-- Psixologik test natijasi -->
+                                                <small class="text-muted">
+                                                    <i class="fas fa-brain me-1"></i>
+                                                    Shkalalar: 
+                                                    {% for sr in result.scale_results.all %}
+                                                        <span class="badge bg-{{ sr.category.color }} badge-sm">
+                                                            {{ sr.scale.name }}: {{ sr.total_score }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ result.created_at|date:"d M Y, H:i" }}
+                                        </small>
+                                    </div>
+                                    
+                                    <a href="{% url 'quiz_result' result.attempt.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        Ko'rish
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Hozircha natija mavjud emas</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Recent Results -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-history me-2"></i>
-                Oxirgi Natijalar
+        
+        <!-- Right Column: Quick Links & Stats -->
+        <div class="col-lg-4">
+            <!-- ✨ Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket me-2"></i>
+                        Tezkor Harakatlar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'quiz_list' %}" class="btn btn-primary">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Barcha Testlar
+                        </a>
+                        <!-- ✨ YANGI: Psixologik testlar -->
+                        <a href="{% url 'psychological_tests' %}" class="btn btn-purple">
+                            <i class="fas fa-brain me-2"></i>
+                            Psixologik Testlar
+                        </a>
+                        <a href="{% url 'results' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Natijalarim
+                        </a>
+                        <!-- ✨ YANGI: Psixologik natijalar -->
+                        <a href="{% url 'psychological_results' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-brain me-2"></i>
+                            Psixologik Natijalar
+                        </a>
+                        <a href="{% url 'statistics' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Statistika
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if recent_results %}
-                    <div class="list-group list-group-flush">
-                        {% for result in recent_results %}
-                        <a href="{% url 'result' result.attempt.id %}" 
-                           class="list-group-item list-group-item-action">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ result.attempt.quiz.title|truncatewords:3 }}</h6>
-                                    <small class="text-muted">
-                                        {{ result.created_at|date:"d M, Y" }}
-                                    </small>
-                                </div>
-                                <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ result.percentage }}%
-                                </span>
+            
+            <!-- Performance Overview (faqat standart testlar) -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Natijalar (Standart)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if standard_results_count > 0 %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-success">O'tgan</span>
+                                <strong class="text-success">{{ standard_passed_count }}</strong>
                             </div>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'results' %}" class="btn btn-sm btn-outline-primary">
-                            Barchasi
-                        </a>
-                    </div>
-                {% else %}
-                    <p class="text-center text-muted">Hali natijalar yo'q</p>
-                {% endif %}
+                            <div class="progress mb-3" style="height: 10px;">
+                                {% widthratio standard_passed_count standard_results_count 100 as pass_percentage %}
+                                <div class="progress-bar bg-success" style="width: {{ pass_percentage }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-danger">O'tmagan</span>
+                                <strong class="text-danger">{{ standard_failed_count }}</strong>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                {% widthratio standard_failed_count standard_results_count 100 as fail_percentage %}
+                                <div class="progress-bar bg-danger" style="width: {{ fail_percentage }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <h3 class="text-primary mb-0">{{ average_percentage }}%</h3>
+                            <small class="text-muted">O'rtacha Ball</small>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">Hozircha statistika yo'q</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-card-mini {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 12px;
+        border: 2px solid #E5E7EB;
+        transition: all 0.3s;
+        height: 100%;
+    }
+    
+    .quiz-card-mini:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 5px 15px rgba(79, 70, 229, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .quiz-meta-small {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    /* ✨ YANGI: Badge styles */
+    .badge-sm {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+<!-- 
+✨ O'ZGARISHLAR XULOSASI:
+1. Stats Cards: Psixologik testlar soni qo'shildi
+2. Available Quizzes: Test turi badge (📝/🧠)
+3. Recent Results: Aralash natijalar (standart + psixologik)
+4. Standart test: Foiz va progress bar
+5. Psixologik test: Shkalalar va balllar
+6. Quick Actions: Psixologik testlar va natijalar
+7. Performance Overview: Faqat standart testlar uchun
+-->

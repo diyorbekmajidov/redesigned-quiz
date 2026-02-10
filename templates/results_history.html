@@ -1,79 +1,464 @@
+<!-- ============================================
+     STUDENT/RESULTS_HISTORY.HTML - YANGILANGAN
+     O'ZGARISHLAR:
+     1. Filter: Barchasi/Standart/Psixologik
+     2. Test turi ko'rsatkichi
+     3. Standart - foiz, Psixologik - shkalalar
+     4. Modal shkalalar uchun
+     ============================================ -->
+
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Natijalar Tarixi{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-    <h2 class="mb-4"><i class="fas fa-history me-2"></i>Natijalar Tarixi</h2>
+<!-- Header -->
+<section class="page-header bg-gradient-primary text-white py-5 mb-5" style="border-radius: 0 0 30px 30px;">
+    <div class="container">
+        <h1 class="display-5 fw-bold">
+            <i class="fas fa-history me-3"></i>
+            Natijalar Tarixi
+        </h1>
+        <p class="lead mb-0">
+            Barcha topshirgan testlaringiz natijalari
+        </p>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Summary Stats -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon primary me-3">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ total_standard_tests }}</h3>
+                        <p class="text-muted mb-0">Standart Testlar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon success me-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ passed_tests }}</h3>
+                        <p class="text-muted mb-0">O'tgan</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon purple me-3">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ total_psychological_tests }}</h3>
+                        <p class="text-muted mb-0">Psixologik Testlar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon warning me-3">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">{{ average_score }}%</h3>
+                        <p class="text-muted mb-0">O'rtacha (Standart)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    <!-- Stats Summary -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <h3>{{ total_tests }}</h3>
-                <p>Jami Testlar</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <h3 class="text-success">{{ passed_tests }}</h3>
-                <p>O'tgan</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <h3 class="text-danger">{{ failed_tests }}</h3>
-                <p>O'tmagan</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <h3 class="text-primary">{{ average_score }}%</h3>
-                <p>O'rtacha Ball</p>
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="filter-section">
+                <button class="filter-btn active" data-filter="all" onclick="filterResults('all')">
+                    <i class="fas fa-th-large me-2"></i>Barchasi
+                </button>
+                <button class="filter-btn" data-filter="standard" onclick="filterResults('standard')">
+                    <i class="fas fa-file-alt me-2"></i>Standart
+                </button>
+                <button class="filter-btn" data-filter="psychological" onclick="filterResults('psychological')">
+                    <i class="fas fa-brain me-2"></i>Psixologik
+                </button>
             </div>
         </div>
     </div>
     
     <!-- Results Table -->
-    <div class="card">
-        <div class="card-body">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Test</th>
-                        <th>Sana</th>
-                        <th>Natija</th>
-                        <th>Holat</th>
-                        <th>Amallar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in results %}
-                    <tr>
-                        <td>{{ result.attempt.quiz.title }}</td>
-                        <td>{{ result.created_at|date:"d M Y" }}</td>
-                        <td>
-                            <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
-                                {{ result.percentage }}%
-                            </span>
-                        </td>
-                        <td>
-                            {% if result.passed %}
-                                <i class="fas fa-check text-success"></i> O'tdi
-                            {% else %}
-                                <i class="fas fa-times text-danger"></i> O'tmadi
+    {% if results %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Test Nomi</th>
+                                <th>Turi</th>
+                                <th>Sana</th>
+                                <th>Natija</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in results %}
+                            <tr class="result-row" data-type="{{ attempt.quiz.quiz_type }}">
+                                <!-- Test Name -->
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div>
+                                            <strong>{{ attempt.quiz.title|truncatewords:10 }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-question-circle me-1"></i>
+                                                {{ attempt.quiz.get_total_questions }} savol
+                                            </small>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <!-- Test Type -->
+                                <td>
+                                    {% if attempt.quiz.is_psychological %}
+                                        <span class="test-badge psychological">
+                                            🧠 Psixologik
+                                        </span>
+                                    {% else %}
+                                        <span class="test-badge standard">
+                                            📝 Standart
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                
+                                <!-- Date -->
+                                <td>
+                                    <div>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ attempt.completed_at|date:"d M Y" }}
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ attempt.completed_at|date:"H:i" }}
+                                    </small>
+                                </td>
+                                
+                                <!-- Result -->
+                                <td>
+                                    {% if attempt.quiz.is_standard %}
+                                        <!-- Standart Test Result -->
+                                        {% if attempt.result %}
+                                            <div class="result-badge {% if attempt.result.passed %}success{% else %}danger{% endif %}">
+                                                <span class="result-percentage">{{ attempt.result.percentage }}%</span>
+                                                <span class="result-status">
+                                                    {% if attempt.result.passed %}
+                                                        <i class="fas fa-check-circle me-1"></i>O'tdi
+                                                    {% else %}
+                                                        <i class="fas fa-times-circle me-1"></i>O'tmadi
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- Psychological Test Result -->
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#scaleModal{{ attempt.id }}">
+                                            <i class="fas fa-chart-line me-1"></i>
+                                            Shkalalar
+                                        </button>
+                                    {% endif %}
+                                </td>
+                                
+                                <!-- Actions -->
+                                <td>
+                                    <a href="{% url 'quiz_result' attempt.id %}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye me-1"></i>Ko'rish
+                                    </a>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal for Psychological Scales (agar psixologik bo'lsa) -->
+                            {% if attempt.quiz.is_psychological and attempt.psychological_result %}
+                            <div class="modal fade" id="scaleModal{{ attempt.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-purple text-white">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-chart-bar me-2"></i>
+                                                {{ attempt.quiz.title }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row g-3">
+                                                {% for sr in attempt.psychological_result.scale_results.all %}
+                                                <div class="col-md-6">
+                                                    <div class="scale-mini-card {{ sr.category.color }}">
+                                                        <h6 class="mb-2">{{ sr.scale.name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <span class="fw-bold fs-4">{{ sr.total_score }}</span>
+                                                            <span class="badge bg-{{ sr.category.color }}">
+                                                                {{ sr.category.name }}
+                                                            </span>
+                                                        </div>
+                                                        <div class="progress" style="height: 8px;">
+                                                            {% widthratio sr.total_score 21 100 as percentage %}
+                                                            <div class="progress-bar bg-{{ sr.category.color }}" 
+                                                                 style="width: {{ percentage }}%">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+                                            <a href="{% url 'quiz_result' attempt.id %}" class="btn btn-purple">
+                                                Batafsil Ko'rish
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'result' result.attempt.id %}" class="btn btn-sm btn-primary">
-                                Ko'rish
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-chart-line fa-5x text-muted" style="opacity: 0.3;"></i>
+            </div>
+            <h3 class="text-muted mb-3">Hozircha test topshirmadingiz</h3>
+            <p class="text-muted mb-4">
+                Testlardan birini topshirib, natijani bu yerda ko'ring
+            </p>
+            <a href="{% url 'quiz_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-clipboard-list me-2"></i>
+                Testlar
+            </a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Filter Buttons */
+    .filter-section {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #E5E7EB;
+        background: white;
+        border-radius: 10px;
+        font-weight: 600;
+        color: #6B7280;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .filter-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+    
+    .filter-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    /* Table */
+    .table thead th {
+        background: #F9FAFB;
+        font-weight: 600;
+        color: #1F2937;
+        border: none;
+        padding: 1rem;
+    }
+    
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s;
+    }
+    
+    .table tbody tr:hover {
+        background: #F9FAFB;
+    }
+    
+    /* Result Badge */
+    .result-badge {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+    }
+    
+    .result-badge.success {
+        background: #ECFDF5;
+        color: #065F46;
+    }
+    
+    .result-badge.danger {
+        background: #FEF2F2;
+        color: #991B1B;
+    }
+    
+    .result-percentage {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .result-status {
+        font-size: 0.85rem;
+    }
+    
+    /* Scale Mini Card (in modal) */
+    .scale-mini-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 4px solid;
+    }
+    
+    .scale-mini-card.green {
+        border-color: var(--category-green);
+    }
+    
+    .scale-mini-card.yellow {
+        border-color: var(--category-yellow);
+    }
+    
+    .scale-mini-card.orange {
+        border-color: var(--category-orange);
+    }
+    
+    .scale-mini-card.red {
+        border-color: var(--category-red);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter functionality
+    function filterResults(type) {
+        const rows = document.querySelectorAll('.result-row');
+        const buttons = document.querySelectorAll('.filter-btn');
+        
+        // Update active button
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.filter === type) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Filter rows
+        rows.forEach(row => {
+            if (type === 'all') {
+                row.style.display = '';
+            } else {
+                if (row.dataset.type === type) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+<!-- 
+✨ O'ZGARISHLAR XULOSASI:
+1. Filter buttons: Barchasi/Standart/Psixologik
+2. Test turi badge har bir qatorda
+3. Standart test: Foiz va O'tdi/O'tmadi
+4. Psixologik test: Shkalalar tugmasi
+5. Modal: Shkalalarni ko'rsatish
+6. JavaScript filter functionality
+7. Stats: Standart va Psixologik alohida
+8. Responsive table
+-->

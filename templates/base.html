@@ -1,3 +1,11 @@
+<!-- ============================================
+     BASE.HTML - YANGILANGAN VERSIYA
+     O'ZGARISHLAR:
+     1. Psixologik test ranglari qo'shildi (CSS)
+     2. Purple gradient qo'shildi
+     3. Category color variables
+     ============================================ -->
+
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -16,6 +24,7 @@
     
     <style>
         :root {
+            /* ✨ YANGI: Standart test ranglari */
             --primary-color: #4F46E5;
             --secondary-color: #7C3AED;
             --success-color: #10B981;
@@ -23,27 +32,18 @@
             --warning-color: #F59E0B;
             --dark-color: #1F2937;
             --light-color: #F3F4F6;
+            
+            /* ✨ YANGI: Psixologik test ranglari */
+            --purple-color: #7C3AED;
+            --purple-light: #A78BFA;
+            --purple-dark: #6D28D9;
+            
+            /* ✨ YANGI: Kategoriya ranglari */
+            --category-green: #10B981;
+            --category-yellow: #F59E0B;
+            --category-orange: #F97316;
+            --category-red: #EF4444;
         }
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .stat-card h3 {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .user-avatar img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
         
         * {
             font-family: 'Inter', sans-serif;
@@ -101,6 +101,11 @@
             font-weight: 600;
         }
         
+        /* ✨ YANGI: Psixologik card header */
+        .card-header.bg-purple {
+            background: linear-gradient(135deg, var(--purple-color) 0%, var(--purple-light) 100%) !important;
+        }
+        
         /* Buttons */
         .btn-primary {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
@@ -114,6 +119,82 @@
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* ✨ YANGI: Purple button */
+        .btn-purple {
+            background: linear-gradient(135deg, var(--purple-color) 0%, var(--purple-light) 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-purple:hover {
+            background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple-color) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4);
+            color: white;
+        }
+        
+        /* ✨ YANGI: Gradient backgrounds */
+        .bg-gradient-purple {
+            background: linear-gradient(135deg, var(--purple-color) 0%, var(--purple-light) 100%);
+            color: white;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+        
+        /* ✨ YANGI: Text colors */
+        .text-purple {
+            color: var(--purple-color) !important;
+        }
+        
+        /* ✨ YANGI: Category badge colors */
+        .badge.bg-green {
+            background-color: var(--category-green) !important;
+            color: white;
+        }
+        
+        .badge.bg-yellow {
+            background-color: var(--category-yellow) !important;
+            color: white;
+        }
+        
+        .badge.bg-orange {
+            background-color: var(--category-orange) !important;
+            color: white;
+        }
+        
+        .badge.bg-red {
+            background-color: var(--category-red) !important;
+            color: white;
+        }
+        
+        /* ✨ YANGI: Test type badges */
+        .test-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .test-badge.standard {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .test-badge.psychological {
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--purple-color);
         }
         
         /* Stats Cards */
@@ -151,6 +232,11 @@
             background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
         }
         
+        /* ✨ YANGI: Purple stat icon */
+        .stat-icon.purple {
+            background: linear-gradient(135deg, var(--purple-color) 0%, var(--purple-light) 100%);
+        }
+        
         /* Progress bars */
         .progress {
             height: 10px;
@@ -161,6 +247,23 @@
         .progress-bar {
             border-radius: 10px;
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+        
+        /* ✨ YANGI: Category progress bars */
+        .progress-bar.bg-green {
+            background: var(--category-green) !important;
+        }
+        
+        .progress-bar.bg-yellow {
+            background: var(--category-yellow) !important;
+        }
+        
+        .progress-bar.bg-orange {
+            background: var(--category-orange) !important;
+        }
+        
+        .progress-bar.bg-red {
+            background: var(--category-red) !important;
         }
         
         /* Badges */
@@ -205,6 +308,68 @@
             font-weight: 700;
             color: var(--primary-color);
         }
+        
+        /* ✨ YANGI: Scale result card */
+        .scale-result-card {
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .scale-result-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: translateY(-5px);
+        }
+        
+        .scale-result-card.green {
+            border-left: 5px solid var(--category-green);
+        }
+        
+        .scale-result-card.yellow {
+            border-left: 5px solid var(--category-yellow);
+        }
+        
+        .scale-result-card.orange {
+            border-left: 5px solid var(--category-orange);
+        }
+        
+        .scale-result-card.red {
+            border-left: 5px solid var(--category-red);
+        }
+        
+        /* ✨ YANGI: Score display */
+        .score-display {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .score-display h2 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        /* ✨ YANGI: Category badge large */
+        .category-badge-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        
+        /* ✨ YANGI: Psychological test card */
+        .quiz-card.psychological {
+            border-top: 4px solid var(--purple-color);
+        }
+        
+        .quiz-card.psychological:hover {
+            border-color: var(--purple-light);
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -231,8 +396,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'list' %}">
+                            <a class="nav-link" href="{% url 'quiz_list' %}">
                                 <i class="fas fa-clipboard-list me-1"></i> Testlar
+                            </a>
+                        </li>
+                        <!-- ✨ YANGI: Psixologik testlar linki -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'psychological_tests' %}">
+                                <i class="fas fa-brain me-1"></i> Psixologik
                             </a>
                         </li>
                         <li class="nav-item">
@@ -243,20 +414,15 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" 
                                role="button" data-bs-toggle="dropdown">
-                                <div class="user-avatar">
-                                    {% if request.student.image_url %}
-                                        <img src="{{ request.student.image_url }}"
-                                            alt="Avatar"
-                                            class="img-fluid rounded-circle"
-                                            style="width:40px; height:40px; object-fit:cover;">
-                                    {% else %}
-                                        <div class="user-avatar bg-light text-primary">
-                                            {{ request.student.student_name|slice:":1"|upper }}
-                                        </div>
-
-                                    {% endif %}
-                                </div>
-
+                                <!-- ✨ YANGI: Student rasmi (HEMIS URL) -->
+                                {% if request.student.student_imeg %}
+                                    <img src="{{ request.student.student_imeg }}" alt="{{ request.student.student_name }}" class="user-avatar" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="user-avatar">
+                                        {{ request.student.student_name|first|upper }}
+                                    </div>
+                                {% endif %}
+                                <span>{{ request.student.student_name|truncatewords:2 }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
@@ -267,6 +433,12 @@
                                 <li>
                                     <a class="dropdown-item" href="{% url 'statistics' %}">
                                         <i class="fas fa-chart-bar me-2"></i> Statistika
+                                    </a>
+                                </li>
+                                <!-- ✨ YANGI: Psixologik natijalar -->
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'psychological_results' %}">
+                                        <i class="fas fa-brain me-2"></i> Psixologik Natijalar
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
@@ -312,10 +484,14 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5><i class="fas fa-brain me-2"></i>Psixologik Test Tizimi</h5>
-                    <p class="text-muted">O'zbekiston talabalar uchun psixologik test platformasi</p>
+                    <p class="text-muted">
+                        <!-- ✨ YANGI: Ikki turdagi test haqida -->
+                        Standart va psixologik testlar platformasi
+                    </p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="mb-0">&copy; 2026 Barcha huquqlar himoyalangan <br> Raqamli talim texnologiyalar markazi</p>
+                    <p class="mb-0">&copy; 2024 Barcha huquqlar himoyalangan</p>
+                    <small class="text-muted">Developed with ❤️</small>
                 </div>
             </div>
         </div>
@@ -330,3 +506,14 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+
+<!-- 
+✨ O'ZGARISHLAR XULOSASI:
+1. CSS Variables: Psixologik test ranglari qo'shildi
+2. .btn-purple, .bg-gradient-purple: Yangi class'lar
+3. .test-badge: Test turi ko'rsatish uchun
+4. .scale-result-card: Psixologik natija card'i
+5. Category colors: green, yellow, orange, red
+6. Navbar: Psixologik testlar linki
+7. User avatar: HEMIS rasm URL support
+-->
