@@ -195,6 +195,10 @@ JAZZMIN_SETTINGS = {
         "main.QuizAttempt": "fas fa-clock",
         "main.UserResponse": "fas fa-comment",
         "main.Result": "fas fa-trophy",
+        "main.PsychologicalScale": "fas fa-balance-scale",
+        "main.PsychologicalCategory": "fas fa-layer-group",
+        "main.PsychologicalScaleResult": "fas fa-chart-pie",
+        "main.PsychologicalResult": "fas fa-award",
         "UserSession.UserSession": "fas fa-user-shield",
         "UserSession.LoginHistory": "fas fa-history",
     }
