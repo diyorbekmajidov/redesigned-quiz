@@ -6,7 +6,7 @@ from .models import Student, StudentGirls, StudentGroup
 class StudentAdmin(admin.ModelAdmin):
     list_display = ('student_name', 'student_id_number', 'email', 'faculty', 'level', 'studentStatus')
     search_fields = ('student_name', 'student_id_number', 'email')
-    list_filter = ('faculty', 'level', 'studentStatus')
+    list_filter = ('faculty', 'level', 'studentStatus', 'group')
 
 
 class StudentGirlsAdmin(admin.ModelAdmin):
