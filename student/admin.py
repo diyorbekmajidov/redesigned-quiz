@@ -15,7 +15,7 @@ class StudentGirlsAdmin(admin.ModelAdmin):
     list_filter = ('marital_status', 'ethics_status', 'orphan_status')
 
 class StudentGroupsAdmin(admin.ModelAdmin):
-    list_display = ('group_name', 'group_code', 'get_student_count')
+    list_display = ('group_name', 'group_code', 'get_student_count', 'group_faculty', 'group_level', 'group_year')
     search_fields = ('group_name', 'group_code')
     list_filter = ('group_faculty', 'group_level', 'group_year')
 
