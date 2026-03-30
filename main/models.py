@@ -1,11 +1,3 @@
-# ============================================
-# UPDATED QUIZ MODELS - PSIXOLOGIK TEST SUPPORT
-# ============================================
-
-"""
-main/models.py - Psixologik va Standart Testlar uchun
-"""
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
