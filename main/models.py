@@ -14,17 +14,10 @@ class Quiz(models.Model):
         ('psychological', 'Psixologik Test'),
     ]
     
-    # Asosiy ma'lumotlar
     title = models.CharField(max_length=200, verbose_name="Test nomi")
     description = models.TextField(blank=True, verbose_name="Tavsif")
     
-    # ✨ YANGI: Test turi
-    quiz_type = models.CharField(
-        max_length=20,
-        choices=QUIZ_TYPE_CHOICES,
-        default='standard',
-        verbose_name="Test turi"
-    )
+    quiz_type = models.CharField(max_length=20, choices=QUIZ_TYPE_CHOICES, default='standard', verbose_name="Test turi")
     
     time_limit = models.IntegerField(
         default=30,
@@ -33,25 +26,15 @@ class Quiz(models.Model):
         verbose_name="Vaqt chegarasi"
     )
     
-    # Standart testlar uchun
-    passing_score = models.IntegerField(
-        default=60,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text="Foizda (faqat standart testlar uchun)",
-        verbose_name="O'tish bali"
-    )
+    passing_score = models.IntegerField(default=60, validators=[MinValueValidator(0), MaxValueValidator(100)],help_text="Foizda (faqat standart testlar uchun)", verbose_name="O'tish bali")
     
     is_active = models.BooleanField(default=True, verbose_name="Faol")
     
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='created_quizzes',
-        verbose_name="Yaratuvchi"
-    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_quizzes', verbose_name="Yaratuvchi")
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Yangilangan")
+    attempt_limit = models.IntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="Urinishlar soni (faqat standart testlar uchun)")
 
     class Meta:
         verbose_name = "Test"
@@ -77,6 +60,13 @@ class Quiz(models.Model):
     def is_standard(self):
         """Standart testmi?"""
         return self.quiz_type == 'standard'
+    def can_attempt(self, student):
+        """Talaba bu testni urinishlar soni"""
+        student_attempts = QuizAttempt.objects.filter(
+            student=student,
+            quiz=self
+        ).exclude(status='completed').count()
+        return student_attempts <= self.attempt_limit
 
 
 class PsychologicalScale(models.Model):
@@ -120,32 +110,16 @@ class PsychologicalCategory(models.Model):
     Psixologik shkala bo'yicha kategoriyalar
     Masalan: 0-7 ball = "Xavotir va depressiya yo'q"
     """
-    scale = models.ForeignKey(
-        PsychologicalScale,
-        on_delete=models.CASCADE,
-        related_name='categories',
-        verbose_name="Shkala"
-    )
+    scale = models.ForeignKey(PsychologicalScale, on_delete=models.CASCADE, related_name='categories', verbose_name="Shkala")
     
-    name = models.CharField(
-        max_length=200,
-        verbose_name="Kategoriya nomi"
-    )
+    name = models.CharField(max_length=200, verbose_name="Kategoriya nomi")
     
-    description = models.TextField(
-        blank=True,
-        verbose_name="Tavsif/Izoh"
-    )
+    description = models.TextField(blank=True, verbose_name="Tavsif/Izoh")
     
-    min_score = models.IntegerField(
-        verbose_name="Minimal ball"
-    )
+    min_score = models.IntegerField(verbose_name="Minimal ball")
     
-    max_score = models.IntegerField(
-        verbose_name="Maksimal ball"
-    )
+    max_score = models.IntegerField(verbose_name="Maksimal ball")
     
-    # Rang (UI uchun)
     color = models.CharField(
         max_length=50,
         default='green',
@@ -158,10 +132,7 @@ class PsychologicalCategory(models.Model):
         verbose_name="Rang"
     )
     
-    order = models.IntegerField(
-        default=0,
-        verbose_name="Tartib"
-    )
+    order = models.IntegerField(default=0, verbose_name="Tartib")
     
     class Meta:
         verbose_name = "Kategoriya"
@@ -186,12 +157,7 @@ class Question(models.Model):
     
     question_text = models.TextField(verbose_name="Savol matni")
     
-    # Standart testlar uchun ball
-    score = models.IntegerField(
-        default=1,
-        validators=[MinValueValidator(1)],
-        verbose_name="Ball (standart testlar uchun)"
-    )
+    score = models.IntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="Ball (standart testlar uchun)")
     
     # ✨ YANGI: Psixologik testlar uchun shkala
     psychological_scale = models.ForeignKey(
@@ -218,13 +184,11 @@ class Question(models.Model):
         """Validatsiya"""
         from django.core.exceptions import ValidationError
         
-        # Psixologik testda shkala bo'lishi kerak
         if self.quiz and self.quiz.is_psychological() and not self.psychological_scale:
             raise ValidationError(
                 "Psixologik testda har bir savol shkala bilan bog'lanishi kerak!"
             )
         
-        # Standart testda shkala bo'lmasligi kerak
         if self.quiz and self.quiz.is_standard() and self.psychological_scale:
             raise ValidationError(
                 "Standart testda shkala ishlatilmaydi!"
@@ -243,16 +207,8 @@ class QuestionText(models.Model):
         verbose_name="Savol matni va javoblar",
         help_text="Format: Savol===Variant1===Variant2===#To'g'riVariant+++KeyingiSavol"
     )
-    score = models.IntegerField(
-        default=1,
-        validators=[MinValueValidator(1)],
-        verbose_name="Ball"
-    )
-    is_processed = models.BooleanField(
-        default=False, 
-        verbose_name="Qayta ishlangan",
-        editable=False
-    )
+    score = models.IntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="Ball")
+    is_processed = models.BooleanField(default=False, verbose_name="Qayta ishlangan", editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -333,25 +289,12 @@ class QuestionText(models.Model):
 class Option(models.Model):
     """Javob varianti - standart va psixologik testlar uchun"""
     
-    question = models.ForeignKey(
-        Question,
-        on_delete=models.CASCADE,
-        related_name='options',
-        verbose_name="Savol"
-    )
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options', verbose_name="Savol")
     
-    option_text = models.CharField(
-        max_length=255,
-        verbose_name="Javob varianti"
-    )
+    option_text = models.CharField(max_length=255, verbose_name="Javob varianti")
     
-    # ✨ Standart testlar uchun
-    is_correct = models.BooleanField(
-        default=False,
-        verbose_name="To'g'ri javob (standart testlar)"
-    )
+    is_correct = models.BooleanField(default=False, verbose_name="To'g'ri javob (standart testlar)")
     
-    # ✨ Psixologik testlar uchun
     psychological_score = models.IntegerField(
         default=0,
         validators=[MinValueValidator(0)],
@@ -359,10 +302,7 @@ class Option(models.Model):
         help_text="0, 1, 2, 3 yoki boshqa ball"
     )
     
-    order = models.IntegerField(
-        default=0,
-        verbose_name="Tartib"
-    )
+    order = models.IntegerField(default=0, verbose_name="Tartib")
 
     class Meta:
         verbose_name = "Javob varianti"
@@ -410,29 +350,13 @@ class QuizAttempt(models.Model):
         verbose_name="Talaba"
     )
     
-    quiz = models.ForeignKey(
-        Quiz,
-        on_delete=models.CASCADE,
-        related_name='attempts',
-        verbose_name="Test"
-    )
-    
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='in_progress',
-        verbose_name="Holat"
-    )
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts', verbose_name="Test")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress', verbose_name="Holat")
     
     started_at = models.DateTimeField(auto_now_add=True, verbose_name="Boshlangan")
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Tugatilgan")
     
-    time_taken = models.IntegerField(
-        null=True,
-        blank=True,
-        help_text="Soniyalarda",
-        verbose_name="Sarflangan vaqt"
-    )
+    time_taken = models.IntegerField(null=True, blank=True, help_text="Soniyalarda", verbose_name="Sarflangan vaqt")
     
     class Meta:
         verbose_name = "Test urinishi"

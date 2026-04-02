@@ -223,6 +223,12 @@ class QuizDetailView(StudentLoginRequiredMixin, DetailView):
         context['best_result'] = best_result
         context['is_psychological'] = quiz.is_psychological()
         
+        # Urinish imkoni borligini tekshirish
+        if quiz.is_standard():
+            context['can_attempt'] = quiz.can_attempt(student)
+        else:
+            context['can_attempt'] = True  # Psixologik testlar uchun cheklov yo'q
+        
         return context
 
 
@@ -231,7 +237,7 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
     template_name = 'take_quiz.html'
     
     def get(self, request, pk):
-        from main.models import Quiz, QuizAttempt, Question
+        from main.models import Quiz, QuizAttempt
         
         student = request.student
         quiz = get_object_or_404(Quiz, pk=pk, is_active=True)
@@ -244,23 +250,27 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
         ).first()
         
         if not attempt:
-            # Yangi urinish yaratish
+            if  quiz.can_attempt(student):
+                messages.error(
+                    request,
+                    f"Siz bu testga maksimal urinishlar soniga ({quiz.attempt_limit}) yetdingiz. "
+                    f"Boshqa urinish qila olmaysiz."
+                )
+                return redirect('quiz_detail', pk=quiz.pk)
+            
             attempt = QuizAttempt.objects.create(
                 student=student,
                 quiz=quiz
             )
             messages.success(request, f"Test boshlandi: {quiz.title}")
         
-        # Vaqt tugaganligini tekshirish
         if attempt.is_time_expired():
             attempt.expire_attempt()
             messages.warning(request, "Vaqt tugadi! Test avtomatik yakunlandi.")
             return redirect('quiz_result', attempt_id=attempt.id)
         
-        # Savollar
         questions = quiz.questions.prefetch_related('options').order_by('order')
         
-        # Student javoblari
         from main.models import UserResponse
         responses = {
             r.question_id: r.selected_option_id
@@ -368,15 +378,11 @@ class QuizResultView(StudentLoginRequiredMixin, DetailView):
         
         from main.models import UserResponse
         
-        # Umumiy ma'lumotlar
         context['quiz'] = quiz
         context['is_psychological'] = quiz.is_psychological()
         
         if quiz.is_standard():
-            # ============ STANDART TEST NATIJASI ============
             context['result'] = attempt.result
-            
-            # Barcha javoblar
             responses = UserResponse.objects.filter(
                 attempt=attempt
             ).select_related(
@@ -386,7 +392,6 @@ class QuizResultView(StudentLoginRequiredMixin, DetailView):
             
             context['responses'] = responses
             
-            # Statistika
             correct_count = responses.filter(is_correct=True).count()
             wrong_count = responses.filter(
                 is_correct=False,
@@ -401,20 +406,17 @@ class QuizResultView(StudentLoginRequiredMixin, DetailView):
             context['total_questions'] = total_questions
             
         else:
-            # ============ PSIXOLOGIK TEST NATIJASI ============
-            from main.models import PsychologicalResult, PsychologicalScaleResult
+            from main.models import PsychologicalScaleResult
             
             psychological_result = attempt.psychological_result
             context['psychological_result'] = psychological_result
             
-            # Har bir shkala bo'yicha natija
             scale_results = PsychologicalScaleResult.objects.filter(
                 result=psychological_result
             ).select_related('scale', 'category')
             
             context['scale_results'] = scale_results
             
-            # Barcha javoblar (ko'rish uchun)
             responses = UserResponse.objects.filter(
                 attempt=attempt
             ).select_related(
@@ -425,7 +427,6 @@ class QuizResultView(StudentLoginRequiredMixin, DetailView):
             
             context['responses'] = responses
             
-            # Statistika
             total_questions = quiz.get_total_questions()
             answered = responses.count()
             unanswered = total_questions - answered
@@ -446,7 +447,6 @@ class ResultsHistoryView(StudentLoginRequiredMixin, ListView):
     def get_queryset(self):
         from main.models import QuizAttempt
         
-        # Barcha yakunlangan urinishlar
         return QuizAttempt.objects.filter(
             student=self.request.student,
             status='completed'
@@ -457,7 +457,6 @@ class ResultsHistoryView(StudentLoginRequiredMixin, ListView):
         
         from main.models import Result, PsychologicalResult
         
-        # Standart testlar statistikasi
         standard_results = Result.objects.filter(
             attempt__student=self.request.student
         )
@@ -476,7 +475,6 @@ class ResultsHistoryView(StudentLoginRequiredMixin, ListView):
             context['failed_tests'] = 0
             context['average_score'] = 0
         
-        # Psixologik testlar statistikasi
         psychological_results = PsychologicalResult.objects.filter(
             attempt__student=self.request.student
         )
@@ -495,12 +493,10 @@ class StudentStatisticsView(StudentLoginRequiredMixin, TemplateView):
         
         from main.models import Result
         
-        # Faqat standart testlar natijalari
         results = Result.objects.filter(
             attempt__student=student
         ).select_related('attempt__quiz').order_by('created_at')
         
-        # Chart uchun ma'lumotlar
         chart_data = {
             'labels': [],
             'scores': [],
@@ -517,7 +513,6 @@ class StudentStatisticsView(StudentLoginRequiredMixin, TemplateView):
         
         context['chart_data'] = json.dumps(chart_data)
         
-        # Umumiy statistika
         context['total_tests'] = results.count()
         context['passed_tests'] = results.filter(passed=True).count()
         context['failed_tests'] = results.filter(passed=False).count()
@@ -534,7 +529,6 @@ class StudentStatisticsView(StudentLoginRequiredMixin, TemplateView):
             context['highest_score'] = None
             context['lowest_score'] = None
         
-        # Psixologik testlar soni
         from main.models import PsychologicalResult
         context['psychological_tests_count'] = PsychologicalResult.objects.filter(
             attempt__student=student
