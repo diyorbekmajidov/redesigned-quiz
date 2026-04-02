@@ -2,11 +2,6 @@
 # ADMIN PANEL - PSIXOLOGIK VA STANDART TESTLAR
 # ============================================
 
-"""
-main/admin.py - To'liq admin interface
-"""
-
-import io
 from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
@@ -19,7 +14,7 @@ from .models import (
 
 try:
     import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
     OPENPYXL_AVAILABLE = True
 except ImportError:
@@ -163,10 +158,8 @@ class OptionInline(admin.TabularInline):
         # Agar quiz mavjud bo'lsa
         if obj and obj.quiz:
             if obj.quiz.is_psychological():
-                # Psixologik testda faqat psychological_score
                 self.fields = ('option_text', 'psychological_score', 'order')
             else:
-                # Standart testda faqat is_correct
                 self.fields = ('option_text', 'is_correct', 'order')
         
         return formset
@@ -177,7 +170,7 @@ class QuestionInline(admin.TabularInline):
     model = Question
     extra = 0
     fields = ('question_text', 'score', 'psychological_scale', 'order')
-    show_change_link = True  # Savolga o'tish uchun
+    show_change_link = True
 
 
 class PsychologicalScaleResultInline(admin.TabularInline):
@@ -222,6 +215,7 @@ class QuizAdmin(admin.ModelAdmin):
         'passing_score',
         'questions_count',
         'attempts_count',
+        'attempt_limit',
         'is_active',
         'created_at'
     )
@@ -236,7 +230,7 @@ class QuizAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Asosiy Ma\'lumotlar', {
-            'fields': ('title', 'description', 'quiz_type', 'is_active')
+            'fields': ('title', 'description', 'quiz_type', 'is_active', 'attempt_limit')
         }),
         ('Test Sozlamalari', {
             'fields': ('time_limit', 'passing_score'),
@@ -252,7 +246,7 @@ class QuizAdmin(admin.ModelAdmin):
     
     def save_model(self, request, obj, form, change):
         """Yaratuvchini avtomatik o'rnatish"""
-        if not change:  # Yangi quiz
+        if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
     

@@ -34,7 +34,7 @@ class Quiz(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Yangilangan")
-    attempt_limit = models.IntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="Urinishlar soni (faqat standart testlar uchun)")
+    attempt_limit = models.IntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="Urinishlar soni")
 
     class Meta:
         verbose_name = "Test"
