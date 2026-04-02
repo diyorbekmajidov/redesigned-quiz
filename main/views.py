@@ -1,8 +1,7 @@
 from django.views.generic import TemplateView, ListView, DetailView
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.db.models import Count, Avg, Q
-from django.utils import timezone
+from django.db.models import Avg
 from django.contrib import messages
 import json
 
