@@ -16,3 +16,4 @@ python-dotenv
 pillow
 django-jazzmin
 openpyxl
+whitenoise
