@@ -30,6 +30,17 @@
     .info-item:last-child {
         border-bottom: none;
     }
+
+    .info-attempt {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-attempt:last-child {
+        border-bottom: none;
+    }
     
     .info-icon {
         width: 50px;
@@ -115,14 +126,18 @@
             </div>
             <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
                 {% if current_attempt %}
-                    <a href="{% url 'take' quiz.id %}" 
+                    <a href="{% url 'quiz_take' quiz.id %}" 
                        class="btn btn-warning btn-lg start-btn">
                         <i class="fas fa-play me-2"></i>Davom ettirish
                     </a>
-                {% else %}
+                {% elif can_attempt %}
                     <button class="btn btn-light btn-lg start-btn" 
                             data-bs-toggle="modal" data-bs-target="#startModal">
-                        <i class="fas fa-play-circle me-2"></i>Boshlash
+                        <i class="fas fa-play me-2"></i>Boshlash
+                    </button>
+                {% else %}
+                    <button class="btn btn-secondary btn-lg start-btn" disabled>
+                        <i class="fas fa-lock me-2"></i>Urinish Tugadi
                     </button>
                 {% endif %}
             </div>
@@ -178,6 +193,27 @@
                     <div>
                         <h6 class="mb-0">O'tish Bali</h6>
                         <p class="text-muted mb-0">{{ quiz.passing_score }}% va undan yuqori</p>
+                    </div>
+                </div>
+
+                <div class="info-attempt">
+                    <div class="info-icon">
+                        <i class="fas fa-redo"></i> 
+                    </div>
+                    <div>
+                        <h6 class="mb-0">Urinishlar Chegarasi</h6>
+                        <p class="text-muted mb-0">
+                            {% if quiz.is_standard %}
+                                {{ total_attempts }} / {{ quiz.attempt_limit }} urinish ishlatildi
+                                {% if can_attempt %}
+                                    <span class="badge bg-success ms-1">Urinish mavjud</span>
+                                {% else %}
+                                    <span class="badge bg-danger ms-1">Tugadi</span>
+                                {% endif %}
+                            {% else %}
+                                Cheklanmagan (psixologik test)
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -295,9 +331,11 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Bekor qilish
                 </button>
-                <a href="{% url 'quiz_take' quiz.id %}" class="btn btn-primary">
-                    <i class="fas fa-play me-2"></i>Testni Boshlash
-                </a>
+                {% if can_attempt %}
+                    <a href="{% url 'quiz_take' quiz.id %}" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Testni Boshlash
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
