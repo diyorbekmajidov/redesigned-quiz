@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -185,7 +186,6 @@ JAZZMIN_SETTINGS = {
         'student': "fas fa-users-cog",
         "student.Student": "fas fa-user",
         "auth.Group": "fas fa-users",
-        "student.Student": "fas fa-user-graduate",
         "student.StudentGirls": "fas fa-female",
         "student.StudentGroup": "fas fa-users",
         "main.Question": "fas fa-question",
@@ -195,7 +195,6 @@ JAZZMIN_SETTINGS = {
         "main.Option": "fas fa-check-circle",
         "main.QuizAttempt": "fas fa-clock",
         "main.UserResponse": "fas fa-comment",
-        "main.Result": "fas fa-trophy",
         "main.PsychologicalScale": "fas fa-balance-scale",
         "main.PsychologicalCategory": "fas fa-layer-group",
         "main.PsychologicalScaleResult": "fas fa-chart-pie",
@@ -204,7 +203,6 @@ JAZZMIN_SETTINGS = {
         "UserSession.LoginHistory": "fas fa-history",
     }
 }
-from django.contrib.messages import constants as messages
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'debug',
