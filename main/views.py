@@ -249,7 +249,7 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
         ).first()
         
         if not attempt:
-            if  quiz.can_attempt(student):
+            if not quiz.can_attempt(student):
                 messages.error(
                     request,
                     f"Siz bu testga maksimal urinishlar soniga ({quiz.attempt_limit}) yetdingiz. "

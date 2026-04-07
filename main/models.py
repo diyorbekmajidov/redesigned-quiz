@@ -62,11 +62,10 @@ class Quiz(models.Model):
         return self.quiz_type == 'standard'
     def can_attempt(self, student):
         """Talaba bu testni urinishlar soni"""
-        student_attempts = QuizAttempt.objects.filter(
-            student=student,
-            quiz=self
-        ).exclude(status='completed').count()
-        return student_attempts <= self.attempt_limit
+        student_attempts = QuizAttempt.objects.filter(student=student, quiz=self).count()
+        print(student_attempts, self.attempt_limit)
+        print(student_attempts < self.attempt_limit)
+        return student_attempts < self.attempt_limit
 
 
 class PsychologicalScale(models.Model):
