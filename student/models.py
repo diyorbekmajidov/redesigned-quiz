@@ -1,17 +1,17 @@
 from django.db import models
 import uuid
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 
 class StudentGroup(models.Model):
     """Talabalar guruhi"""
-    group_name = models.CharField(max_length=56, verbose_name="Guruh nomi")
-    group_code = models.CharField(max_length=56, unique=True, verbose_name="Guruh kodi")
-    group_faculty = models.CharField(max_length=56, verbose_name="Fakultet")
-    group_level = models.CharField(max_length=56, verbose_name="Kurs")
-    group_year = models.CharField(max_length=56, verbose_name="O'quv yili")
-    education_form = models.CharField(max_length=56, verbose_name="Ta'lim shakli")
-    education_lang = models.CharField(max_length=56, verbose_name="Ta'lim tili")
-    
+    group_name = models.CharField(max_length=112, verbose_name="Guruh nomi")
+    group_code = models.CharField(max_length=112, unique=True, verbose_name="Guruh kodi")
+    group_faculty = models.CharField(max_length=112, verbose_name="Fakultet")
+    group_level = models.CharField(max_length=112, verbose_name="Kurs")
+    group_year = models.CharField(max_length=112, verbose_name="O'quv yili")
+    education_form = models.CharField(max_length=112, verbose_name="Ta'lim shakli")
+    education_lang = models.CharField(max_length=112, verbose_name="Ta'lim tili")
+
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
@@ -32,7 +32,7 @@ class Student(models.Model):
         editable=False
     )
     student_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Talaba_Ismi")
-    phone_number = models.CharField(max_length=56, blank=True, null=True, verbose_name="Telfon-raqam")
+    phone_number = models.CharField(max_length=112, blank=True, null=True, verbose_name="Telfon-raqam")
     student_imeg = models.URLField(blank=True, null=True)
     student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
     hemis_id = models.CharField(max_length=32)
@@ -59,7 +59,7 @@ class Student(models.Model):
     date_update = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f''
+        return ''
     
     def get_level_display(self):
         return self.level
@@ -96,8 +96,8 @@ class StudentGirls(models.Model):
         verbose_name="Talaba"
     )
     
-    place_of_birth = models.CharField(max_length=560, blank=True, null=True, verbose_name="Tug'ilgan joyi")
-    current_address = models.CharField(max_length=256, blank=True, null=True, verbose_name="Hozirgi manzili")
+    place_of_birth = models.CharField(max_length=1024, blank=True, null=True, verbose_name="Tug'ilgan joyi")
+    current_address = models.CharField(max_length=1024, blank=True, null=True, verbose_name="Hozirgi manzili")
     district = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tuman")
     province = models.CharField(max_length=100, blank=True, null=True, verbose_name="Viloyat")
     
