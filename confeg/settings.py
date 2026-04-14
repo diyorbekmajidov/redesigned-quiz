@@ -201,7 +201,17 @@ JAZZMIN_SETTINGS = {
         "main.PsychologicalResult": "fas fa-award",
         "UserSession.UserSession": "fas fa-user-shield",
         "UserSession.LoginHistory": "fas fa-history",
-    }
+    },
+    "custom_links": {
+        "main": [
+            {
+                "name": "📊 Psixologik Statistika",
+                "url": "/admin-stats/psychological/",
+                "icon": "fas fa-chart-bar",
+                "permissions": ["main.view_psychologicalresult"],
+            }
+        ]
+    },
 }
 
 MESSAGE_TAGS = {
