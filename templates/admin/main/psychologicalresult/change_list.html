@@ -1,0 +1,30 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if stats_url %}
+    <li>
+        <a href="{{ stats_url }}"
+           class="addlink"
+           style="
+               background: linear-gradient(135deg, #7C3AED, #6D28D9);
+               color: white !important;
+               padding: 8px 16px;
+               border-radius: 6px;
+               text-decoration: none;
+               font-weight: 600;
+               font-size: 13px;
+               display: inline-flex;
+               align-items: center;
+               gap: 6px;
+               box-shadow: 0 2px 8px rgba(124,58,237,0.35);
+               transition: all 0.2s ease;
+           "
+           onmouseover="this.style.boxShadow='0 4px 16px rgba(124,58,237,0.55)';this.style.transform='translateY(-1px)'"
+           onmouseout="this.style.boxShadow='0 2px 8px rgba(124,58,237,0.35)';this.style.transform='translateY(0)'"
+           target="_blank">
+            📊 Statistika va Grafiklar
+        </a>
+    </li>
+    {% endif %}
+{% endblock %}

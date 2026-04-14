@@ -1,0 +1,536 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{# ══════════════════════════════════════════════════════ #}
+{#  1.  Sticky action bar — sahifa eng tepasida qotadi   #}
+{# ══════════════════════════════════════════════════════ #}
+{% block content_title %}
+
+<style>
+/* ─── Submit row yashirish ──────────────────────────── */
+.submit-row { display: none !important; }
+/* Jazzmin right-side col-lg-3 column ichidagi tugmalar kartochkasi */
+.col-12.col-lg-3 .card .form-group input[type="submit"],
+.col-12.col-lg-3 .card .form-group { display: none !important; }
+/* Agar hamma card-footerlar ham yashirilishi kerak bo'lsa */
+.col-12.col-lg-3 .card.card-primary { display: none !important; }
+
+
+/* ─── Sticky bar (FIXED - Jazzmin inner scroll bilan ishlaydi) ─────── */
+.sp-sticky-bar {
+    position: fixed;
+    top: 49px;          /* Jazzmin top navbar height */
+    left: 250px;        /* Jazzmin sidebar width */
+    right: 0;
+    z-index: 1050;
+    background: #fff;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 9px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+/* Jazzmin sidebar yopilganda (mobil) */
+body.sidebar-collapse .sp-sticky-bar { left: 0; }
+/* Sticky bar ostida content uchun joy ochish */
+#content-main { padding-top: 56px !important; }
+.sp-breadcrumb {
+    font-size: 12px; color: #6B7280;
+    display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;
+}
+.sp-breadcrumb a { color: #7C3AED; text-decoration: none; white-space: nowrap; }
+.sp-breadcrumb a:hover { text-decoration: underline; }
+.sp-breadcrumb .sp-cur {
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; max-width: 240px;
+}
+.sp-act { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.sp-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 15px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; border: none;
+    cursor: pointer; text-decoration: none;
+    transition: all .15s; white-space: nowrap;
+}
+.sp-btn-save {
+    background: linear-gradient(135deg,#7C3AED,#6D28D9); color:#fff;
+}
+.sp-btn-save:hover { opacity:.9; transform:translateY(-1px); }
+.sp-btn-cont {
+    background: #F3F4F6; color: #374151;
+    border: 1px solid #D1D5DB;
+}
+.sp-btn-cont:hover { background:#E5E7EB; }
+.sp-btn-del {
+    background:#FEE2E2; color:#DC2626;
+    border:1px solid #FCA5A5;
+}
+.sp-btn-del:hover { background:#FECACA; }
+.sp-btn-hist {
+    background:#F0FDF4; color:#16A34A;
+    border:1px solid #86EFAC;
+}
+.sp-btn-hist:hover { background:#DCFCE7; }
+
+/* ─── Profile card ─────────────────────────────────── */
+.sp-profile {
+    background: linear-gradient(135deg,#1e1b4b 0%,#312e81 55%,#4C1D95 100%);
+    border-radius: 16px;
+    padding: 22px 26px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin: 20px 0 22px 0;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(124,58,237,.25);
+}
+.sp-profile::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:200px; height:200px;
+    background:rgba(255,255,255,.06); border-radius:50%;
+}
+.sp-profile::after {
+    content:''; position:absolute; bottom:-60px; right:60px;
+    width:160px; height:160px;
+    background:rgba(255,255,255,.04); border-radius:50%;
+}
+.sp-ava {
+    width:86px; height:86px; border-radius:50%;
+    object-fit:cover;
+    border:3px solid rgba(255,255,255,.4);
+    flex-shrink:0; position:relative; z-index:1;
+}
+.sp-ava-ph {
+    width:86px; height:86px; border-radius:50%;
+    background:rgba(255,255,255,.18);
+    border:3px solid rgba(255,255,255,.35);
+    display:flex; align-items:center; justify-content:center;
+    font-size:30px; font-weight:800; color:#fff;
+    flex-shrink:0; position:relative; z-index:1;
+}
+.sp-pinfo { flex:1; position:relative; z-index:1; min-width:0; }
+.sp-pname { font-size:18px; font-weight:800; letter-spacing:-.3px; }
+.sp-pid { font-size:11px; opacity:.7; margin:3px 0 12px; font-family:monospace; }
+.sp-tags { display:flex; flex-wrap:wrap; gap:5px; }
+.sp-tag {
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.2);
+    color:#fff; padding:3px 9px;
+    border-radius:20px; font-size:11px; font-weight:600;
+}
+.sp-tag-result { font-size:11px; padding:4px 11px; }
+.sp-pquick {
+    display:flex; flex-direction:column; gap:6px;
+    align-items:flex-end; position:relative; z-index:1; flex-shrink:0;
+}
+.sp-pquick-box {
+    background:rgba(255,255,255,.14);
+    border-radius:10px; padding:8px 16px; text-align:center;
+    min-width:90px;
+}
+.sp-pquick-num { font-size:20px; font-weight:800; }
+.sp-pquick-lbl { font-size:10px; opacity:.7; font-weight:500; }
+
+/* ─── Hide original submit-row (we have our own) ──── */
+.submit-row { display:none !important; }
+
+/* ─── Test natijalari ──────────────────────────────── */
+.sp-results-wrap {
+    margin-top: 28px;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+.sp-stats-row {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;
+}
+.sp-stat-card {
+    background:#fff; border:1px solid #E5E7EB;
+    border-radius:12px; padding:16px; text-align:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.sp-stat-num { font-size:26px; font-weight:800; }
+.sp-stat-lbl { font-size:11px; color:#6B7280; margin-top:3px; font-weight:500; }
+.sp-overall-banner {
+    border-radius:12px; padding:13px 18px;
+    display:flex; align-items:center; gap:14px;
+    margin-bottom:16px; border:2px solid;
+}
+.sp-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.sp-chip {
+    padding:5px 12px; border-radius:20px;
+    font-size:12px; font-weight:600; border:1px solid;
+}
+.sp-section-card {
+    background:#fff; border:1px solid #E5E7EB;
+    border-radius:14px; overflow:hidden;
+    box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.sp-section-hdr {
+    display:flex; align-items:center; gap:10px;
+    padding:13px 18px;
+    border-bottom:1px solid #F3F4F6; background:#FAFAFA;
+}
+.sp-section-ico {
+    width:30px; height:30px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+}
+.sp-section-ttl { font-size:13px; font-weight:700; color:#111827; }
+.sp-section-bdy { padding:14px; }
+.sp-quiz-list { display:grid; gap:12px; }
+.sp-qcard {
+    border:1px solid #E5E7EB; border-radius:12px; overflow:hidden;
+    background:#fff; transition:all .2s;
+    text-decoration: none !important;
+    display: block;
+    color: inherit !important;
+}
+.sp-qcard:hover { 
+    box-shadow:0 8px 24px rgba(124,58,237,.12); 
+    transform: translateY(-2px);
+    border-color: #7C3AED;
+}
+.sp-qcard-top {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 15px; border-bottom:1px solid #F9FAFB;
+}
+.sp-qmeta { display:flex; align-items:center; gap:9px; }
+.sp-qico {
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+}
+.sp-qico.psy { background:#EDE9FE; }
+.sp-qico.std { background:#DBEAFE; }
+.sp-qtitle { font-weight:700; color:#111827; font-size:13px; }
+.sp-qdate  { font-size:11px; color:#9CA3AF; margin-top:1px; }
+.sp-rbadge {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;
+}
+.sp-scales-grid {
+    padding:10px 14px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px;
+}
+.sp-scale-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 11px; border-radius:8px; border:1px solid;
+}
+.sp-sname { font-size:11px; font-weight:600; color:#374151; flex:1; }
+.sp-sscore {
+    font-size:10px; font-weight:700; background:#fff;
+    padding:2px 7px; border-radius:6px; margin:0 6px;
+    color:#374151; border:1px solid #E5E7EB;
+}
+.sp-scat { font-size:11px; font-weight:600; }
+.sp-std-body {
+    padding:11px 14px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.sp-pct-ring {
+    width:64px; height:64px; border-radius:50%; border:4px solid;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800;
+}
+.sp-ss { text-align:center; }
+.sp-ss .n { font-size:20px; font-weight:800; color:#111827; }
+.sp-ss .l { font-size:10px; color:#6B7280; font-weight:500; }
+.sp-empty {
+    text-align:center; padding:36px 20px; color:#9CA3AF;
+}
+.sp-empty .ei { font-size:42px; margin-bottom:8px; }
+.sp-empty .et { font-size:14px; font-weight:500; }
+</style>
+
+{# Sticky bar #}
+<div class="sp-sticky-bar" id="sp-sticky-bar">
+    <div class="sp-breadcrumb">
+        <a href="/admin/">Admin</a>
+        <span>›</span>
+        <a href="/admin/student/student/">Talabalar</a>
+        <span>›</span>
+        <span class="sp-cur">
+            {% if original %}{{ original.student_name|default:"Yangi talaba" }}{% else %}Yangi talaba{% endif %}
+        </span>
+    </div>
+    <div class="sp-act">
+        {% if original and has_delete_permission %}
+        <a href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}"
+           class="sp-btn sp-btn-del">🗑 O'chirish</a>
+        {% endif %}
+        {% if original %}
+        <a href="{% url opts|admin_urlname:'history' original.pk|admin_urlquote %}"
+           class="sp-btn sp-btn-hist">🕐 Tarix</a>
+        {% endif %}
+        {% if has_change_permission or has_add_permission %}
+        <button type="submit" name="_continue" form="student-cf"
+                class="sp-btn sp-btn-cont">💾 Saqlash va davom</button>
+        <button type="submit" form="student-cf"
+                class="sp-btn sp-btn-save">✅ Saqlash</button>
+        {% endif %}
+    </div>
+</div>
+
+{# Profile card #}
+{% if original %}
+<div class="sp-profile">
+    {% if original.student_imeg %}
+    <img src="{{ original.student_imeg }}" class="sp-ava" alt="{{ original.student_name }}" />
+    {% else %}
+    <div class="sp-ava-ph">
+        {{ original.student_name|default:"T"|slice:":1"|upper }}
+    </div>
+    {% endif %}
+
+    <div class="sp-pinfo">
+        <div class="sp-pname">{{ original.student_name|default:"—" }}</div>
+        <div class="sp-pid">
+            ID: {{ original.student_id_number|default:"—" }}&nbsp;·&nbsp;HEMIS: {{ original.hemis_id|default:"—" }}
+        </div>
+        <div class="sp-tags">
+            {% if original.faculty %}<span class="sp-tag">🏛 {{ original.faculty }}</span>{% endif %}
+            {% if original.group %}<span class="sp-tag">👥 {{ original.group.group_name }}</span>{% endif %}
+            {% if original.level %}<span class="sp-tag">📚 {{ original.level }}-kurs</span>{% endif %}
+            {% if original.semester %}<span class="sp-tag">📅 {{ original.semester }}-semestr</span>{% endif %}
+            {% if original.gender %}<span class="sp-tag">{{ original.gender }}</span>{% endif %}
+            {% if overall_summary.overall %}
+            <span class="sp-tag sp-tag-result"
+                  style="background:{{ overall_summary.overall.bg }};
+                         color:{{ overall_summary.overall.text }};
+                         border-color:{{ overall_summary.overall.text }}50;">
+                {{ overall_summary.overall.icon }} {{ overall_summary.overall.label }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="sp-pquick">
+        <div class="sp-pquick-box">
+            <div class="sp-pquick-num">{{ overall_summary.total_tests|default:"0" }}</div>
+            <div class="sp-pquick-lbl">Jami testlar</div>
+        </div>
+        {% if overall_summary.avg_percentage is not None %}
+        <div class="sp-pquick-box">
+            <div class="sp-pquick-num">{{ overall_summary.avg_percentage }}%</div>
+            <div class="sp-pquick-lbl">O'rtacha ball</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Form ga ID berish
+    var f = document.querySelector('#content-main form');
+    if (f) f.id = 'student-cf';
+
+    // 2. Jazzmin right-side save/delete/history kartochkalarini yashirish
+    var rightCols = document.querySelectorAll('[class*="col-lg-3"] .card, [class*="col-md-3"] .card');
+    rightCols.forEach(function(card) {
+        var txt = (card.innerText || card.textContent || '').toLowerCase();
+        if (/saqlash|save|o.chir|delet|tarix|histor|add another/.test(txt)) {
+            card.style.cssText = 'display:none!important';
+        }
+    });
+
+    // 3. Submit-row larni yashirish
+    document.querySelectorAll('.submit-row').forEach(function(el) {
+        el.style.cssText = 'display:none!important';
+    });
+
+    // 4. Sticky bar left ni sidebar ga moslashtirish
+    function adjustBar() {
+        var bar = document.getElementById('sp-sticky-bar');
+        if (!bar) return;
+        var sb = document.querySelector('.main-sidebar');
+        if (sb) {
+            var w = sb.offsetWidth;
+            bar.style.left = (w > 10 ? w : 250) + 'px';
+        }
+    }
+    adjustBar();
+    var tog = document.querySelector('[data-widget="pushmenu"]');
+    if (tog) tog.addEventListener('click', function() { setTimeout(adjustBar, 350); });
+
+    // 5. Har qanday Jazzmin specific elementlarni tozalash
+    setInterval(function() {
+        document.querySelectorAll('.jazzmin-sticky-header, .object-tools').forEach(function(el) {
+            el.style.display = 'none';
+        });
+    }, 500);
+});
+</script>
+{% endif %}
+
+{% endblock content_title %}
+
+
+{# ══════════════════════════════════════════════════════ #}
+{#  2.  Test natijalari paneli — forma tagida chiqadi    #}
+{# ══════════════════════════════════════════════════════ #}
+{% block after_related_objects %}
+{{ block.super }}
+
+{% if quiz_results is not None %}
+<div class="sp-results-wrap">
+
+    {# Stats #}
+    <div class="sp-stats-row">
+        <div class="sp-stat-card">
+            <div class="sp-stat-num" style="color:#7C3AED;">{{ overall_summary.total_tests|default:"0" }}</div>
+            <div class="sp-stat-lbl">Jami testlar</div>
+        </div>
+        <div class="sp-stat-card">
+            <div class="sp-stat-num" style="color:#3B82F6;">{{ overall_summary.std_tests|default:"0" }}</div>
+            <div class="sp-stat-lbl">Standart testlar</div>
+        </div>
+        <div class="sp-stat-card">
+            {% if overall_summary.avg_percentage is not None %}
+            <div class="sp-stat-num" style="color:#10B981;">{{ overall_summary.avg_percentage }}%</div>
+            {% else %}
+            <div class="sp-stat-num" style="color:#D1D5DB;">—</div>
+            {% endif %}
+            <div class="sp-stat-lbl">O'rtacha ball</div>
+        </div>
+    </div>
+
+    {# Overall banner #}
+    {% if overall_summary.overall %}
+    <div class="sp-overall-banner"
+         style="background:{{ overall_summary.overall.bg }};
+                border-color:{{ overall_summary.overall.text }}40;
+                color:{{ overall_summary.overall.text }};">
+        <div style="font-size:26px;">{{ overall_summary.overall.icon }}</div>
+        <div>
+            <div style="font-size:14px;font-weight:700;">Umumiy natija: {{ overall_summary.overall.label }}</div>
+            <div style="font-size:11px;opacity:.75;margin-top:2px;">
+                Psixologik: {{ overall_summary.psy_tests }} shkala baholandi
+                {% if overall_summary.avg_percentage is not None %}
+                · Standart o'rtacha: {{ overall_summary.avg_percentage }}%
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Color chips #}
+    {% if overall_summary.psy_tests > 0 %}
+    <div class="sp-chips">
+        {% if overall_summary.color_counts.green > 0 %}
+        <div class="sp-chip" style="background:#DCFCE7;border-color:#86EFAC;color:#16A34A;">
+            🟢 Yashil: {{ overall_summary.color_counts.green }}
+        </div>{% endif %}
+        {% if overall_summary.color_counts.yellow > 0 %}
+        <div class="sp-chip" style="background:#FEF9C3;border-color:#FDE047;color:#CA8A04;">
+            🟡 Sariq: {{ overall_summary.color_counts.yellow }}
+        </div>{% endif %}
+        {% if overall_summary.color_counts.orange > 0 %}
+        <div class="sp-chip" style="background:#FFEDD5;border-color:#FDBA74;color:#C2410C;">
+            🟠 To'q sariq: {{ overall_summary.color_counts.orange }}
+        </div>{% endif %}
+        {% if overall_summary.color_counts.red > 0 %}
+        <div class="sp-chip" style="background:#FEE2E2;border-color:#FCA5A5;color:#DC2626;">
+            🔴 Qizil: {{ overall_summary.color_counts.red }}
+        </div>{% endif %}
+    </div>
+    {% endif %}
+
+    {# Quiz cards #}
+    <div class="sp-section-card">
+        <div class="sp-section-hdr">
+            <div class="sp-section-ico" style="background:#EDE9FE;">📊</div>
+            <div class="sp-section-ttl">Test Natijalari</div>
+            <span style="margin-left:auto;background:linear-gradient(135deg,#7C3AED,#6D28D9);
+                         color:#fff;padding:2px 11px;border-radius:20px;font-size:12px;font-weight:600;">
+                {{ overall_summary.total_tests }} ta
+            </span>
+        </div>
+        <div class="sp-section-bdy">
+
+            {% if quiz_results %}
+            <div class="sp-quiz-list">
+                {% for entry in quiz_results %}
+                <a href="/admin/main/quizattempt/{{ entry.attempt_id }}/change/" class="sp-qcard">
+
+                    <div class="sp-qcard-top">
+                        <div class="sp-qmeta">
+                            <div class="sp-qico {% if entry.quiz_type == 'psychological' %}psy{% else %}std{% endif %}">
+                                {% if entry.quiz_type == 'psychological' %}🧠{% else %}📝{% endif %}
+                            </div>
+                            <div>
+                                <div class="sp-qtitle">{{ entry.quiz_title }}</div>
+                                <div class="sp-qdate">
+                                    {% if entry.completed_at %}{{ entry.completed_at|date:"d.m.Y H:i" }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sp-rbadge"
+                             style="background:{{ entry.worst_bg }};
+                                    color:{{ entry.worst_text }};
+                                    border:1px solid {{ entry.worst_text }}30;">
+                            {{ entry.worst_icon }} {{ entry.worst_label }}
+                        </div>
+                    </div>
+
+                    {% if entry.quiz_type == 'psychological' and entry.scales %}
+                    <div class="sp-scales-grid">
+                        {% for sc in entry.scales %}
+                        <div class="sp-scale-row"
+                             style="background:{{ sc.bg }}25;border-color:{{ sc.text }}30;">
+                            <span class="sp-sname">{{ sc.scale_name }}</span>
+                            <span class="sp-sscore">{{ sc.score }} ball</span>
+                            <span class="sp-scat" style="color:{{ sc.text }};">
+                                {{ sc.icon }} {{ sc.category_name }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if entry.quiz_type == 'standard' and entry.standard %}
+                    <div class="sp-std-body">
+                        <div class="sp-pct-ring"
+                             style="color:{{ entry.worst_text }};border-color:{{ entry.worst_text }};">
+                            {{ entry.standard.percentage }}%
+                        </div>
+                        <div class="sp-ss">
+                            <div class="n" style="color:#10B981;">{{ entry.standard.correct }}</div>
+                            <div class="l">To'g'ri</div>
+                        </div>
+                        <div class="sp-ss">
+                            <div class="n" style="color:#EF4444;">{{ entry.standard.wrong }}</div>
+                            <div class="l">Noto'g'ri</div>
+                        </div>
+                        <div class="sp-ss">
+                            <div class="n">{{ entry.standard.total }}</div>
+                            <div class="l">Jami savol</div>
+                        </div>
+                        <div style="flex:1;text-align:right;">
+                            <span class="sp-rbadge"
+                                  style="background:{{ entry.worst_bg }};
+                                         color:{{ entry.worst_text }};
+                                         border:1px solid {{ entry.worst_text }}30;">
+                                {{ entry.worst_icon }} {{ entry.worst_label }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </a>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="sp-empty">
+                <div class="ei">📋</div>
+                <div class="et">Bu talaba hali hech qanday test topshirmagan</div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock after_related_objects %}
