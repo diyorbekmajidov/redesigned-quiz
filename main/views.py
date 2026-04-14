@@ -3,6 +3,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.db.models import Avg
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
+from collections import defaultdict
 import json
 
 
@@ -590,4 +593,296 @@ class PsychologicalResultsView(StudentLoginRequiredMixin, ListView):
                 result=result
             ).select_related('scale', 'category')
         
+        return context
+
+
+# =========================================================
+#  ADMIN: Psixologik natijalar statistikasi (grafiklar)
+# =========================================================
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminPsychologicalStatisticsView(TemplateView):
+    """
+    Admin panel uchun psixologik natijalar statistikasi
+    - Rang taqsimoti donut chart
+    - Vaqt bo'yicha stacked bar
+    - Shkalalar bo'yicha horizontal bar
+    - Fakultet va guruh bo'yicha grafiklar
+    """
+    template_name = 'admin_psychological_stats.html'
+
+    # ─── Rang ikonlari ───
+    COLOR_ICONS = {
+        'green': '🟢',
+        'yellow': '🟡',
+        'orange': '🟠',
+        'red': '🔴',
+    }
+    COLOR_LABELS = {
+        'green': 'Yashil',
+        'yellow': 'Sariq',
+        'orange': "To'q sariq",
+        'red': 'Qizil',
+    }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from main.models import (
+            PsychologicalResult, PsychologicalScaleResult,
+            Quiz
+        )
+        from student.models import Student, StudentGroup
+
+        # ── GET params ──
+        selected_quiz_id  = self.request.GET.get('quiz', '')
+        selected_faculty  = self.request.GET.get('faculty', '')
+        selected_group_id = self.request.GET.get('group', '')
+
+        # ── Base queryset ──
+        qs = PsychologicalResult.objects.select_related(
+            'attempt__student__group',
+            'attempt__quiz',
+        ).prefetch_related(
+            'scale_results__category',
+            'scale_results__scale',
+        ).order_by('-created_at')
+
+        if selected_quiz_id:
+            qs = qs.filter(attempt__quiz__id=selected_quiz_id)
+        if selected_faculty:
+            qs = qs.filter(attempt__student__faculty=selected_faculty)
+        if selected_group_id:
+            qs = qs.filter(attempt__student__group__id=selected_group_id)
+
+        total_results = qs.count()
+
+        # ── Color counts ──
+        color_counts = defaultdict(int)
+        for result in qs:
+            for sr in result.scale_results.all():
+                if sr.category:
+                    color_counts[sr.category.color] += 1
+
+        total_color = sum(color_counts.values()) or 1
+
+        def pct(val):
+            return round(val / total_color * 100, 1)
+
+        # ── Color chart data (donut) ──
+        color_chart_data = {
+            'labels': ['Yashil', 'Sariq', "To'q sariq", 'Qizil'],
+            'values': [
+                color_counts['green'],
+                color_counts['yellow'],
+                color_counts['orange'],
+                color_counts['red'],
+            ],
+            'percentages': [
+                pct(color_counts['green']),
+                pct(color_counts['yellow']),
+                pct(color_counts['orange']),
+                pct(color_counts['red']),
+            ],
+        }
+
+        # ── Timeline data (last 10 months) ──
+        from django.utils import timezone
+        from datetime import timedelta
+
+        timeline_labels = []
+        tl_green = []
+        tl_yellow = []
+        tl_orange = []
+        tl_red = []
+
+        now = timezone.now()
+        for i in range(9, -1, -1):
+            month_start = (now.replace(day=1) - timedelta(days=i * 30)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            if i == 0:
+                month_end = now
+            else:
+                next_month = (month_start.replace(day=28) + timedelta(days=4))
+                month_end = next_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+            label = month_start.strftime('%b %Y')
+            timeline_labels.append(label)
+
+            month_qs = qs.filter(created_at__gte=month_start, created_at__lt=month_end)
+
+            mc = defaultdict(int)
+            for r in month_qs.prefetch_related('scale_results__category'):
+                for sr in r.scale_results.all():
+                    if sr.category:
+                        mc[sr.category.color] += 1
+
+            tl_green.append(mc['green'])
+            tl_yellow.append(mc['yellow'])
+            tl_orange.append(mc['orange'])
+            tl_red.append(mc['red'])
+
+        timeline_chart_data = {
+            'labels': timeline_labels,
+            'green': tl_green,
+            'yellow': tl_yellow,
+            'orange': tl_orange,
+            'red': tl_red,
+        }
+
+        # ── Scale stats ──
+        quizzes_qs = Quiz.objects.filter(quiz_type='psychological')
+        if selected_quiz_id:
+            quizzes_qs = quizzes_qs.filter(id=selected_quiz_id)
+
+        scale_stats = []
+        scale_bar_labels = []
+        scale_bar_avg = []
+
+        for quiz in quizzes_qs:
+            for scale in quiz.psychological_scales.prefetch_related('categories').all():
+                sr_qs = PsychologicalScaleResult.objects.filter(
+                    scale=scale,
+                    result__in=qs,
+                ).select_related('category')
+
+                total_sr = sr_qs.count()
+                if total_sr == 0:
+                    continue
+
+                avg_score = sr_qs.aggregate(a=Avg('total_score'))['a'] or 0
+                scale_bar_labels.append(f"{scale.name[:25]}")
+                scale_bar_avg.append(round(avg_score, 1))
+
+                cat_counts = defaultdict(int)
+                for sr in sr_qs:
+                    cat_name = sr.category.name if sr.category else 'Nomalum'
+                    cat_color = sr.category.color if sr.category else 'none'
+                    cat_counts[(cat_name, cat_color)] += 1
+
+                cat_stats_list = []
+                for (name, color), count in sorted(cat_counts.items(), key=lambda x: -x[1]):
+                    cat_stats_list.append({
+                        'category_name': name,
+                        'color': color,
+                        'count': count,
+                        'pct': round(count / total_sr * 100, 1),
+                    })
+
+                scale_stats.append({
+                    'scale_name': scale.name,
+                    'total_results': total_sr,
+                    'avg_score': round(avg_score, 1),
+                    'category_stats': cat_stats_list,
+                })
+
+        scale_chart_data = {
+            'labels': scale_bar_labels,
+            'avg_scores': scale_bar_avg,
+        }
+
+        # ── Faculty stats ──
+        faculties_list = list(
+            Student.objects.values_list('faculty', flat=True)
+            .distinct().exclude(faculty__isnull=True).exclude(faculty='')
+        )
+        faculty_labels = []
+        fac_green = []; fac_yellow = []; fac_orange = []; fac_red = []
+
+        for faculty in faculties_list:
+            fac_qs = qs.filter(attempt__student__faculty=faculty)
+            if not fac_qs.exists():
+                continue
+            fmc = defaultdict(int)
+            for r in fac_qs.prefetch_related('scale_results__category'):
+                for sr in r.scale_results.all():
+                    if sr.category:
+                        fmc[sr.category.color] += 1
+            if sum(fmc.values()) == 0:
+                continue
+            short = faculty[:15] + '…' if len(faculty) > 15 else faculty
+            faculty_labels.append(short)
+            fac_green.append(fmc['green'])
+            fac_yellow.append(fmc['yellow'])
+            fac_orange.append(fmc['orange'])
+            fac_red.append(fmc['red'])
+
+        faculty_chart_data = {
+            'labels': faculty_labels,
+            'green': fac_green,
+            'yellow': fac_yellow,
+            'orange': fac_orange,
+            'red': fac_red,
+        }
+        faculty_stats = bool(faculty_labels)
+
+        # ── Group stats ──
+        groups_qs = StudentGroup.objects.all()
+        group_labels = []; group_values = []
+        for g in groups_qs:
+            cnt = qs.filter(attempt__student__group=g).count()
+            if cnt > 0:
+                group_labels.append(g.group_name[:12])
+                group_values.append(cnt)
+
+        group_chart_data = {
+            'labels': group_labels,
+            'values': group_values,
+        }
+
+        # ── Recent results (last 30) ──
+        recent_list = []
+        for r in qs[:30]:
+            student = r.attempt.student
+            grp = student.group
+
+            tags = []
+            for sr in r.scale_results.all():
+                if sr.category:
+                    tags.append({
+                        'color': sr.category.color,
+                        'icon': self.COLOR_ICONS.get(sr.category.color, '⚪'),
+                        'label': sr.category.name,
+                    })
+
+            recent_list.append({
+                'id': r.id,
+                'student_name': student.student_name or '-',
+                'faculty': student.faculty or '-',
+                'group_name': grp.group_name if grp else '-',
+                'quiz_title': r.attempt.quiz.title,
+                'color_tags': tags[:4],
+                'created_at': r.created_at.strftime('%d.%m.%Y %H:%M') if r.created_at else '-',
+            })
+
+        # ── Filter selects ──
+        context.update({
+            # filter options
+            'quizzes': Quiz.objects.filter(quiz_type='psychological', is_active=True),
+            'faculties': faculties_list,
+            'groups': StudentGroup.objects.all(),
+            # selected values
+            'selected_quiz_id': selected_quiz_id,
+            'selected_faculty': selected_faculty,
+            'selected_group_id': selected_group_id,
+            # summary
+            'total_results': total_results,
+            'color_counts': dict(color_counts),
+            'green_pct': pct(color_counts['green']),
+            'yellow_pct': pct(color_counts['yellow']),
+            'orange_pct': pct(color_counts['orange']),
+            'red_pct': pct(color_counts['red']),
+            # chart JSON
+            'color_chart_data': json.dumps(color_chart_data),
+            'timeline_chart_data': json.dumps(timeline_chart_data),
+            'scale_chart_data': json.dumps(scale_chart_data),
+            'faculty_chart_data': json.dumps(faculty_chart_data),
+            'group_chart_data': json.dumps(group_chart_data),
+            'timeline_labels': timeline_labels,
+            # scale cards
+            'scale_stats': scale_stats,
+            'faculty_stats': faculty_stats,
+            # table
+            'recent_results': recent_list,
+        })
         return context

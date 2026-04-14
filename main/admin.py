@@ -725,6 +725,12 @@ class PsychologicalResultAdmin(admin.ModelAdmin):
 
     actions = ['export_psychological_excel', 'export_single_psychological_excel']
 
+    def changelist_view(self, request, extra_context=None):
+        """Changelist sahifasiga Statistika tugmasini qo'shish"""
+        extra_context = extra_context or {}
+        extra_context['stats_url'] = '/admin-stats/psychological/'
+        return super().changelist_view(request, extra_context=extra_context)
+
     def student_name(self, obj):
         """Talaba ismi"""
         return obj.attempt.student.student_name
