@@ -636,6 +636,7 @@ class AdminPsychologicalStatisticsView(TemplateView):
         # ── GET params ──
         selected_quiz_id  = self.request.GET.get('quiz', '')
         selected_faculty  = self.request.GET.get('faculty', '')
+        selected_level    = self.request.GET.get('level', '')
         selected_group_id = self.request.GET.get('group', '')
 
         # ── Base queryset ──
@@ -651,6 +652,8 @@ class AdminPsychologicalStatisticsView(TemplateView):
             qs = qs.filter(attempt__quiz__id=selected_quiz_id)
         if selected_faculty:
             qs = qs.filter(attempt__student__faculty=selected_faculty)
+        if selected_level:
+            qs = qs.filter(attempt__student__level=selected_level)
         if selected_group_id:
             qs = qs.filter(attempt__student__group__id=selected_group_id)
 
@@ -786,6 +789,13 @@ class AdminPsychologicalStatisticsView(TemplateView):
             Student.objects.values_list('faculty', flat=True)
             .distinct().exclude(faculty__isnull=True).exclude(faculty='')
         )
+
+        # ── Level (kurs) list ──
+        levels_list = list(
+            Student.objects.values_list('level', flat=True)
+            .distinct().exclude(level__isnull=True).exclude(level='')
+            .order_by('level')
+        )
         faculty_labels = []
         fac_green = []; fac_yellow = []; fac_orange = []; fac_red = []
 
@@ -860,10 +870,12 @@ class AdminPsychologicalStatisticsView(TemplateView):
             # filter options
             'quizzes': Quiz.objects.filter(quiz_type='psychological', is_active=True),
             'faculties': faculties_list,
+            'levels': levels_list,
             'groups': StudentGroup.objects.all(),
             # selected values
             'selected_quiz_id': selected_quiz_id,
             'selected_faculty': selected_faculty,
+            'selected_level': selected_level,
             'selected_group_id': selected_group_id,
             # summary
             'total_results': total_results,

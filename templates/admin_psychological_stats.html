@@ -496,7 +496,7 @@
 <!-- ====== FILTER BAR ====== -->
 <div class="filter-bar">
     <span class="filter-label">Filtr:</span>
-    <form method="get" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <form method="get" id="filterForm" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
         <select name="quiz" class="filter-select" onchange="this.form.submit()">
             <option value="">📋 Barcha testlar</option>
             {% for quiz in quizzes %}
@@ -506,21 +506,33 @@
             {% endfor %}
         </select>
 
-        <select name="faculty" class="filter-select" onchange="this.form.submit()">
+        <select name="faculty" id="facultySelect" class="filter-select" onchange="onFacultyChange()">
             <option value="">🏛️ Barcha fakultetlar</option>
             {% for f in faculties %}
             <option value="{{ f }}" {% if selected_faculty == f %}selected{% endif %}>{{ f }}</option>
             {% endfor %}
         </select>
 
-        <select name="group" class="filter-select" onchange="this.form.submit()">
-            <option value="">👥 Barcha guruhlar</option>
-            {% for g in groups %}
-            <option value="{{ g.id }}" {% if selected_group_id == g.id|stringformat:"s" %}selected{% endif %}>{{ g.group_name }}</option>
+        <select name="level" id="levelSelect" class="filter-select" onchange="onLevelChange()">
+            <option value="">📚 Barcha kurslar</option>
+            {% for lvl in levels %}
+            <option value="{{ lvl }}" {% if selected_level == lvl %}selected{% endif %}>{{ lvl }}-kurs</option>
             {% endfor %}
         </select>
 
-        {% if selected_quiz_id or selected_faculty or selected_group_id %}
+        <select name="group" id="groupSelect" class="filter-select" onchange="this.form.submit()">
+            <option value="">👥 Barcha guruhlar</option>
+            {% for g in groups %}
+            <option value="{{ g.id }}"
+                    data-faculty="{{ g.group_faculty }}"
+                    data-level="{{ g.group_level }}"
+                    {% if selected_group_id == g.id|stringformat:"s" %}selected{% endif %}>
+                {{ g.group_name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        {% if selected_quiz_id or selected_faculty or selected_level or selected_group_id %}
         <a href="?" class="btn btn-outline" style="font-size:13px;">✕ Toza</a>
         {% endif %}
     </form>
@@ -970,7 +982,51 @@ document.addEventListener('DOMContentLoaded', () => {
         bar.style.width = '0%';
         setTimeout(() => { bar.style.width = w; }, 200);
     });
+
+    // Initial group filter on load
+    filterGroups();
 });
+
+// ─── Cascading filter helpers ───
+function getSelectedFaculty() {
+    return document.getElementById('facultySelect')?.value || '';
+}
+function getSelectedLevel() {
+    return document.getElementById('levelSelect')?.value || '';
+}
+
+function filterGroups() {
+    const faculty = getSelectedFaculty();
+    const level   = getSelectedLevel();
+    const groupSel = document.getElementById('groupSelect');
+    if (!groupSel) return;
+
+    let hasVisible = false;
+    Array.from(groupSel.options).forEach(opt => {
+        if (!opt.value) { opt.style.display = ''; return; }  // "Barcha" option
+        const fMatch = !faculty || opt.dataset.faculty === faculty;
+        const lMatch = !level   || opt.dataset.level   === level;
+        const show   = fMatch && lMatch;
+        opt.style.display = show ? '' : 'none';
+        if (show) hasVisible = true;
+    });
+
+    // If currently selected group is now hidden, reset it
+    const cur = groupSel.options[groupSel.selectedIndex];
+    if (cur && cur.value && cur.style.display === 'none') {
+        groupSel.value = '';
+    }
+}
+
+function onFacultyChange() {
+    filterGroups();
+    document.getElementById('filterForm').submit();
+}
+
+function onLevelChange() {
+    filterGroups();
+    document.getElementById('filterForm').submit();
+}
 </script>
 </body>
 </html>
