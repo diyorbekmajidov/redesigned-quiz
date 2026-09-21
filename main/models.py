@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -353,6 +355,12 @@ class QuizAttempt(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress', verbose_name="Holat")
     
     started_at = models.DateTimeField(auto_now_add=True, verbose_name="Boshlangan")
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="Muddati tugash vaqti",
+    )
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Tugatilgan")
     
     time_taken = models.IntegerField(null=True, blank=True, help_text="Soniyalarda", verbose_name="Sarflangan vaqt")
@@ -376,17 +384,31 @@ class QuizAttempt(models.Model):
         """Vaqt tugaganmi tekshirish"""
         if self.status != 'in_progress':
             return False
-        elapsed = (timezone.now() - self.started_at).total_seconds() / 60
-        return elapsed > self.quiz.time_limit
+        return timezone.now() >= self.get_expiration_time()
+
+    def get_expiration_time(self):
+        """Attempt tugaydigan vaqtni qaytaradi.
+
+        Eski attemptlar uchun expires_at hali to'ldirilmagan bo'lishi mumkin,
+        shuning uchun started_at va quiz.time_limit orqali zaxira hisoblanadi.
+        """
+        if self.expires_at:
+            return self.expires_at
+        return self.started_at + timedelta(minutes=self.quiz.time_limit)
 
     def get_remaining_time(self):
         """Qolgan vaqt (soniyalarda)"""
         if self.status != 'in_progress':
             return 0
-        elapsed = (timezone.now() - self.started_at).total_seconds()
-        total_seconds = self.quiz.time_limit * 60
-        remaining = total_seconds - elapsed
+        remaining = (self.get_expiration_time() - timezone.now()).total_seconds()
         return max(0, int(remaining))
+
+    def save(self, *args, **kwargs):
+        """Yangi attempt uchun tugash vaqtini avtomatik saqlaydi."""
+        if self.expires_at is None and self.status == 'in_progress':
+            start_time = self.started_at or timezone.now()
+            self.expires_at = start_time + timedelta(minutes=self.quiz.time_limit)
+        super().save(*args, **kwargs)
     
     def complete_attempt(self):
         """Testni tugatish va natijani hisoblash"""

@@ -49,6 +49,10 @@ class StudentDashboardView(StudentLoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = self.request.student
+
+        # Cron kechiksa ham dashboardda muddati o'tgan test ko'rinib qolmasin.
+        from main.services import expire_overdue_attempts
+        expire_overdue_attempts(student=student)
         
         from main.models import Quiz, QuizAttempt, Result, PsychologicalResult
         
@@ -164,6 +168,9 @@ class QuizListView(StudentLoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = self.request.student
+
+        from main.services import expire_overdue_attempts
+        expire_overdue_attempts(student=student)
         
         # Har bir test uchun student urinishini qo'shish
         from main.models import QuizAttempt
@@ -191,6 +198,9 @@ class QuizDetailView(StudentLoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         student = self.request.student
         quiz = self.object
+
+        from main.services import expire_overdue_attempts
+        expire_overdue_attempts(student=student)
         
         from main.models import QuizAttempt, Result, PsychologicalResult
         
@@ -555,6 +565,9 @@ class PsychologicalTestsView(StudentLoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = self.request.student
+
+        from main.services import expire_overdue_attempts
+        expire_overdue_attempts(student=student)
         
         # Har bir test uchun student urinishini qo'shish
         from main.models import QuizAttempt
