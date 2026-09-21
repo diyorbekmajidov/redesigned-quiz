@@ -3,6 +3,7 @@
 # ============================================
 
 from django.contrib import admin
+from django.db.models import Count
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -150,28 +151,31 @@ class OptionInline(admin.TabularInline):
     """Question ichida javoblarni ko'rsatish"""
     model = Option
     extra = 4
-    fields = ('option_text', 'is_correct', 'psychological_score', 'order')
-    
-    def get_formset(self, request, obj=None, **kwargs):
-        """Dinamik fieldlar - test turiga qarab"""
-        formset = super().get_formset(request, obj, **kwargs)
-        
-        # Agar quiz mavjud bo'lsa
-        if obj and obj.quiz:
-            if obj.quiz.is_psychological():
-                self.fields = ('option_text', 'psychological_score', 'order')
-            else:
-                self.fields = ('option_text', 'is_correct', 'order')
-        
-        return formset
+    fields = ('option_text', 'is_correct', 'order')
+
+    def get_fields(self, request, obj=None):
+        """Test turiga mos maydonlarni ko'rsatish.
+
+        self.fields ni o'zgartirmaymiz: admin singleton bo'lgani uchun uni
+        mutatsiya qilish keyingi requestlarda noto'g'ri ustunlar chiqishiga
+        olib kelishi mumkin.
+        """
+        if obj and obj.quiz_id and obj.quiz.is_psychological():
+            return ('option_text', 'psychological_score', 'order')
+        return ('option_text', 'is_correct', 'order')
 
 
 class QuestionInline(admin.TabularInline):
     """Quiz ichida savollarni ko'rsatish (small preview)"""
     model = Question
     extra = 0
-    fields = ('question_text', 'score', 'psychological_scale', 'order')
     show_change_link = True
+
+    def get_fields(self, request, obj=None):
+        """Quiz turiga mos savol maydonlarini ko'rsatish."""
+        if obj and obj.quiz_type == 'psychological':
+            return ('question_text', 'psychological_scale', 'order')
+        return ('question_text', 'score', 'order')
 
 
 class PsychologicalScaleResultInline(admin.TabularInline):
@@ -244,6 +248,28 @@ class QuizAdmin(admin.ModelAdmin):
     )
     
     inlines = [PsychologicalScaleInline, QuestionInline]
+
+    list_select_related = ('created_by',)
+
+    def get_queryset(self, request):
+        return (
+            super().get_queryset(request)
+            .annotate(
+                _question_count=Count('questions', distinct=True),
+                _attempt_count=Count('attempts', distinct=True),
+            )
+        )
+
+    def get_inlines(self, request, obj=None):
+        """Standart testda keraksiz psixologik shkala inline'ini yashirish."""
+        if obj and obj.is_standard():
+            return [QuestionInline]
+        return [PsychologicalScaleInline, QuestionInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('created_by',)
+        return ()
     
     def save_model(self, request, obj, form, change):
         """Yaratuvchini avtomatik o'rnatish"""
@@ -261,7 +287,9 @@ class QuizAdmin(admin.ModelAdmin):
     
     def questions_count(self, obj):
         """Savollar soni"""
-        count = obj.get_total_questions()
+        count = getattr(obj, '_question_count', None)
+        if count is None:
+            count = obj.get_total_questions()
         return format_html(
             '<strong style="color:#4F46E5;">{}</strong> ta',
             count
@@ -271,7 +299,9 @@ class QuizAdmin(admin.ModelAdmin):
     
     def attempts_count(self, obj):
         """Urinishlar soni"""
-        count = obj.attempts.count()
+        count = getattr(obj, '_attempt_count', None)
+        if count is None:
+            count = obj.attempts.count()
         return format_html(
             '<span style="color:#10B981;">{}</span> urinish',
             count
@@ -289,10 +319,15 @@ class PsychologicalScaleAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     
     inlines = [PsychologicalCategoryInline]
+    list_select_related = ('quiz',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_category_count=Count('categories'))
     
     def categories_count(self, obj):
         """Kategoriyalar soni"""
-        return obj.categories.count()
+        count = getattr(obj, '_category_count', None)
+        return count if count is not None else obj.categories.count()
     
     categories_count.short_description = 'Kategoriyalar'
 
@@ -304,6 +339,7 @@ class PsychologicalCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'scale', 'score_range', 'color_display', 'order')
     list_filter = ('scale', 'color')
     search_fields = ('name', 'description')
+    list_select_related = ('scale', 'scale__quiz')
     
     def score_range(self, obj):
         """Ball oralig'i"""
@@ -374,6 +410,22 @@ class QuestionAdmin(admin.ModelAdmin):
         return text
     
     question_preview.short_description = 'Savol'
+
+    list_select_related = ('quiz', 'psychological_scale')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_option_count=Count('options'))
+
+    def get_fieldsets(self, request, obj=None):
+        if obj and obj.quiz.is_psychological():
+            return (
+                ('Savol', {'fields': ('quiz', 'question_text', 'order')}),
+                ('Psixologik shkala', {
+                    'fields': ('psychological_scale',),
+                    'description': 'Bu savol javoblari tanlangan shkala bo‘yicha ball beradi.',
+                }),
+            )
+        return super().get_fieldsets(request, obj)
     
     def quiz_type_display(self, obj):
         """Test turi"""
@@ -385,7 +437,8 @@ class QuestionAdmin(admin.ModelAdmin):
     
     def options_count(self, obj):
         """Javoblar soni"""
-        return obj.options.count()
+        count = getattr(obj, '_option_count', None)
+        return count if count is not None else obj.options.count()
     
     options_count.short_description = 'Javoblar'
 
@@ -409,6 +462,7 @@ class OptionAdmin(admin.ModelAdmin):
     )
     
     search_fields = ('option_text', 'question__question_text')
+    list_select_related = ('question', 'question__quiz')
     
     def quiz_type_display(self, obj):
         """Test turi"""
@@ -481,6 +535,9 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = (
+        'student',
+        'quiz',
+        'status',
         'started_at',
         'expires_at',
         'completed_at',
@@ -502,6 +559,10 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     date_hierarchy = 'started_at'
     ordering = ('-started_at',)
     list_select_related = ('student', 'quiz')
+
+    def has_add_permission(self, request):
+        """Attemptlar talaba tomonidan yaratiladi, admin qo'lda yaratmaydi."""
+        return False
 
     @staticmethod
     def _format_datetime(value):
@@ -607,6 +668,14 @@ class ResultAdmin(admin.ModelAdmin):
     )
 
     actions = ['export_results_excel']
+
+    def has_add_permission(self, request):
+        """Natija attempt yakunlanganda avtomatik yaratiladi."""
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Natijani o'chirish attempt bilan nomuvofiqlik keltirishi mumkin."""
+        return False
     
     def student_name(self, obj):
         """Talaba ismi"""
@@ -767,6 +836,13 @@ class PsychologicalResultAdmin(admin.ModelAdmin):
     inlines = [PsychologicalScaleResultInline]
 
     actions = ['export_psychological_excel', 'export_single_psychological_excel']
+
+    def has_add_permission(self, request):
+        """Natija attempt yakunlanganda avtomatik yaratiladi."""
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def changelist_view(self, request, extra_context=None):
         """Changelist sahifasiga Statistika tugmasini qo'shish"""
@@ -1040,6 +1116,15 @@ class UserResponseAdmin(admin.ModelAdmin):
     search_fields = ('attempt__student__student_name', 'question__question_text')
     
     readonly_fields = ('attempt', 'question', 'selected_option', 'is_correct', 'earned_score', 'answered_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
     
     def student_name(self, obj):
         return obj.attempt.student.student_name
