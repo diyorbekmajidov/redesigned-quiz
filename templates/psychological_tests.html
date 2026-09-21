@@ -12,9 +12,11 @@
 
 {% block title %}Psixologik Testlar{% endblock %}
 
+{% block main_class %}listing-main{% endblock %}
+
 {% block content %}
 <!-- Header -->
-<section class="page-header bg-gradient-purple text-white py-5 mb-5" style="border-radius: 0 0 30px 30px;">
+<section class="page-header app-listing-hero bg-gradient-purple text-white">
     <div class="container">
         <div class="text-center">
             <div class="mb-3">
@@ -49,7 +51,7 @@
         <div class="row g-4">
             {% for quiz in quizzes %}
             <div class="col-md-6 col-lg-4">
-                <div class="quiz-card psychological-test">
+                <div class="quiz-card app-quiz-card psychological-test">
                     <!-- Header -->
                     <div class="quiz-header">
                         <div class="mb-2">

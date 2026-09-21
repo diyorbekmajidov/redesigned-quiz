@@ -1,3 +1,5 @@
+{% load static %}
+
 <!-- ============================================
      BASE.HTML - YANGILANGAN VERSIYA
      O'ZGARISHLAR:
@@ -21,7 +23,7 @@
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         :root {
             /* ✨ YANGI: Standart test ranglari */
@@ -373,17 +375,24 @@
     </style>
     
     {% block extra_css %}{% endblock %}
+
+    <!-- Product UI system; loaded last so shared components remain consistent -->
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-brain me-2"></i>
-                Psixologik Test
+            <a class="navbar-brand app-brand" href="{% url 'home' %}">
+                <span class="app-brand-mark"><i class="fas fa-brain"></i></span>
+                <span class="app-brand-copy">
+                    <span class="app-brand-name">Campus Test</span>
+                    <span class="app-brand-subtitle">Student platformasi</span>
+                </span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Navigatsiyani ochish">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -391,30 +400,28 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     {% if request.student %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard' %}">
+                            <a class="nav-link app-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                                 <i class="fas fa-home me-1"></i> Bosh sahifa
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'quiz_list' %}">
+                            <a class="nav-link app-nav-link {% if request.resolver_match.url_name == 'quiz_list' or request.resolver_match.url_name == 'quiz_detail' or request.resolver_match.url_name == 'quiz_take' %}active{% endif %}" href="{% url 'quiz_list' %}">
                                 <i class="fas fa-clipboard-list me-1"></i> Testlar
                             </a>
                         </li>
-                        <!-- ✨ YANGI: Psixologik testlar linki -->
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'psychological_tests' %}">
+                            <a class="nav-link app-nav-link {% if request.resolver_match.url_name == 'psychological_tests' or request.resolver_match.url_name == 'psychological_results' %}active{% endif %}" href="{% url 'psychological_tests' %}">
                                 <i class="fas fa-brain me-1"></i> Psixologik
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'results' %}">
+                            <a class="nav-link app-nav-link {% if request.resolver_match.url_name == 'results' or request.resolver_match.url_name == 'quiz_result' %}active{% endif %}" href="{% url 'results' %}">
                                 <i class="fas fa-chart-line me-1"></i> Natijalar
                             </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" 
-                               role="button" data-bs-toggle="dropdown">
-                                <!-- ✨ YANGI: Student rasmi (HEMIS URL) -->
+                            <a class="nav-link dropdown-toggle user-profile app-nav-link app-user-menu" href="#" id="userDropdown"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if request.student.student_imeg %}
                                     <img src="{{ request.student.student_imeg }}" alt="{{ request.student.student_name }}" class="user-avatar" style="object-fit: cover;">
                                 {% else %}
@@ -422,7 +429,7 @@
                                         {{ request.student.student_name|first|upper }}
                                     </div>
                                 {% endif %}
-                                <span>{{ request.student.student_name|truncatewords:2 }}</span>
+                                <span class="app-user-name">{{ request.student.student_name|truncatewords:2 }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
@@ -451,7 +458,7 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="btn btn-light" href="{% url 'login' %}">
+                            <a class="btn btn-light px-3" href="{% url 'login' %}">
                                 <i class="fas fa-sign-in-alt me-1"></i> Kirish
                             </a>
                         </li>
@@ -474,16 +481,16 @@
     {% endif %}
     
     <!-- Main Content -->
-    <main class="{% block main_class %}container my-4{% endblock %}">
+    <main class="app-main {% block main_class %}container my-4{% endblock %}">
         {% block content %}{% endblock %}
     </main>
     
     <!-- Footer -->
-    <footer class="footer mt-auto">
+    <footer class="footer app-footer mt-auto">
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="fas fa-brain me-2"></i>Psixologik Test Tizimi</h5>
+                    <h5><i class="fas fa-brain me-2"></i>Campus Test</h5>
                     <p class="text-muted">
                         <!-- ✨ YANGI: Ikki turdagi test haqida -->
                         Standart va psixologik testlar platformasi
