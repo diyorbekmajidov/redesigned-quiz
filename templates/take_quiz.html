@@ -9,14 +9,19 @@
         background: #f5f7fa;
     }
     
+    /* Test davomida talaba boshqa sahifaga o'tib ketmasligi uchun umumiy
+       navbar yashiriladi. Quiz header esa ekranning yuqorisida sticky turadi. */
+    .quiz-taking-page .app-navbar {
+        display: none;
+    }
+
     .quiz-header-fixed {
-        position: fixed;
+        position: sticky;
         top: 0;
-        left: 0;
-        right: 0;
         background: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
+        border-bottom: 1px solid #e7eaf2;
+        box-shadow: 0 8px 24px rgba(28, 35, 66, 0.10);
+        z-index: 1020;
         padding: 15px 0;
     }
     
@@ -52,22 +57,29 @@
     }
     
     .student-name {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-weight: 600;
         color: #333;
         font-size: 0.95rem;
     }
     
     .quiz-container {
-        margin-top: 100px;
-        padding-bottom: 50px;
+        margin-top: 0;
+        padding-top: 1.5rem;
+        padding-bottom: 190px;
     }
     
     .timer-display {
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         color: white;
-        padding: 15px 30px;
+        min-width: 145px;
+        justify-content: center;
+        padding: 12px 20px;
         border-radius: 50px;
-        font-size: 1.5rem;
+        font-size: 1.35rem;
         font-weight: bold;
         display: inline-flex;
         align-items: center;
@@ -199,12 +211,82 @@
     .save-status {
         font-size: 0.9rem;
         color: var(--success-color);
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .quiz-header-fixed {
+            padding: 12px 0;
+        }
+
+        .quiz-header-fixed .progress-info {
+            width: 100%;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .student-info {
+            min-width: 0;
+            flex: 1 1 auto;
+            padding: 6px 10px;
+        }
+
+        .student-name {
+            max-width: 120px;
+        }
+
+        .save-status {
+            display: none;
+        }
+
+        .timer-display {
+            min-width: 118px;
+            padding: 10px 14px;
+            font-size: 1.1rem;
+        }
+
+        .quiz-container {
+            padding-top: 1rem;
+            padding-bottom: 220px;
+        }
+
+        .question-navigation {
+            padding: 12px 0;
+        }
+
+        .nav-dots {
+            gap: 6px;
+            margin-bottom: 12px;
+            max-height: 86px;
+            overflow-y: auto;
+        }
+
+        .nav-dot {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+        }
+
+        .question-navigation .btn {
+            padding: 0.55rem 0.65rem;
+            font-size: 0.85rem;
+        }
+
+        .question-navigation .btn i {
+            margin-right: 0 !important;
+            margin-left: 0 !important;
+        }
+
+        .question-navigation .btn-group .btn {
+            padding-right: 0.55rem;
+            padding-left: 0.55rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Fixed Header -->
+<!-- Quiz status header -->
 <div class="quiz-header-fixed">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -230,11 +312,12 @@
                     <i class="fas fa-check-circle me-1"></i> Avtomatik saqlanmoqda
                 </div>
                 
-                <div class="timer-display text-primary" 
+                <div class="timer-display"
                      id="quiz-timer" 
-                     data-remaining-seconds="{{ remaining_time }}">
+                     data-remaining-seconds="{{ remaining_time }}"
+                     data-expires-at="{{ expires_at_iso }}">
                     <i class="fas fa-clock"></i>
-                    <span>{{ remaining_time|floatformat:0|default:"0" }}:00</span>
+                    <span class="timer-value">{{ remaining_time_display }}</span>
                 </div>
             </div>
         </div>
@@ -369,7 +452,44 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/quiz_timer.js' %}"></script>
+<script src="{% static 'js/quiz_timer.js' %}?v=4"></script>
+<script>
+// Static JS yuklanmay qolgan holatda ham timer ishlashi uchun kichik fallback.
+// Asosiy timer ishga tushgan bo'lsa, bu blok hech narsa qilmaydi.
+document.addEventListener('DOMContentLoaded', function () {
+    const timerElement = document.getElementById('quiz-timer');
+    if (!timerElement || timerElement.dataset.timerInitialized === 'true') {
+        return;
+    }
+
+    const valueElement = timerElement.querySelector('.timer-value');
+    const expiresAt = Date.parse(timerElement.dataset.expiresAt || '');
+    const form = document.getElementById('quiz-form');
+    let timeUpHandled = false;
+
+    if (!valueElement || !Number.isFinite(expiresAt)) {
+        return;
+    }
+
+    const updateFallbackTimer = function () {
+        const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        valueElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        timerElement.classList.toggle('warning', remaining <= 300 && remaining > 60);
+        timerElement.classList.toggle('danger', remaining <= 60);
+
+        if (remaining === 0 && !timeUpHandled) {
+            timeUpHandled = true;
+            window.location.assign(form.action);
+        }
+    };
+
+    updateFallbackTimer();
+    window.setInterval(updateFallbackTimer, 250);
+});
+</script>
 <script>
 let currentQuestion = 1;
 const totalQuestions = {{ total_questions }};

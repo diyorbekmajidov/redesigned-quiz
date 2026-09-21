@@ -379,7 +379,7 @@
     <!-- Product UI system; loaded last so shared components remain consistent -->
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body>
+<body class="{% if request.resolver_match.url_name == 'quiz_take' %}quiz-taking-page{% endif %}">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
         <div class="container">

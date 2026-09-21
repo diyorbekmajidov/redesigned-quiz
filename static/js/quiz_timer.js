@@ -3,33 +3,61 @@
  */
 
 class QuizTimer {
-    constructor(remainingSeconds, onTimeUp) {
+    constructor(remainingSeconds, onTimeUp, expiresAt = null) {
         this.remainingSeconds = remainingSeconds;
         this.onTimeUp = onTimeUp;
+        this.expiresAt = expiresAt ? new Date(expiresAt).getTime() : null;
         this.timerInterval = null;
         this.warningShown = false;
+        this.oneMinuteWarningShown = false;
+        this.timeUpHandled = false;
+        this.previousRemainingSeconds = remainingSeconds + 1;
+        this.lastTickAt = Date.now();
+        this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     }
     
     start() {
-        this.updateDisplay();
-        this.timerInterval = setInterval(() => {
-            this.remainingSeconds--;
-            
-            if (this.remainingSeconds <= 0) {
-                this.stop();
-                this.onTimeUp();
-                return;
-            }
-            
-            this.updateDisplay();
-            this.checkWarnings();
-        }, 1000);
+        this.tick();
+        this.timerInterval = window.setInterval(() => this.tick(), 250);
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
     }
     
     stop() {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
+        }
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
+
+    tick() {
+        if (this.expiresAt) {
+            this.remainingSeconds = Math.max(
+                0,
+                Math.ceil((this.expiresAt - Date.now()) / 1000)
+            );
+        } else {
+            const now = Date.now();
+            const elapsedSeconds = Math.floor((now - this.lastTickAt) / 1000);
+            if (elapsedSeconds > 0) {
+                this.remainingSeconds = Math.max(0, this.remainingSeconds - elapsedSeconds);
+                this.lastTickAt = now;
+            }
+        }
+
+        this.updateDisplay();
+        this.checkWarnings();
+
+        if (this.remainingSeconds <= 0 && !this.timeUpHandled) {
+            this.timeUpHandled = true;
+            this.stop();
+            this.onTimeUp();
+        }
+    }
+
+    handleVisibilityChange() {
+        if (!document.hidden) {
+            this.tick();
         }
     }
     
@@ -39,18 +67,21 @@ class QuizTimer {
         
         const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         
-        // Timer element'ni yangilash
+        // Timer element'ni yangilash. Icon va status matni saqlanib qolishi
+        // uchun butun elementning textContent'ini almashtirmaymiz.
         const timerElement = document.getElementById('quiz-timer');
         if (timerElement) {
-            timerElement.textContent = display;
+            const valueElement = timerElement.querySelector('.timer-value');
+            if (valueElement) {
+                valueElement.textContent = display;
+            }
             
             // Rang o'zgartirish
+            timerElement.classList.remove('warning', 'danger');
             if (this.remainingSeconds <= 60) {
-                timerElement.classList.add('text-danger');
-                timerElement.classList.remove('text-warning', 'text-primary');
+                timerElement.classList.add('danger');
             } else if (this.remainingSeconds <= 300) {
-                timerElement.classList.add('text-warning');
-                timerElement.classList.remove('text-danger', 'text-primary');
+                timerElement.classList.add('warning');
             }
         }
         
@@ -73,18 +104,34 @@ class QuizTimer {
     
     checkWarnings() {
         // 5 daqiqa qolganida ogohlantirish
-        if (this.remainingSeconds === 300 && !this.warningShown) {
+        if (
+            this.remainingSeconds <= 300 &&
+            this.previousRemainingSeconds > 300 &&
+            !this.warningShown
+        ) {
             this.showWarning('5 daqiqa qoldi!');
             this.warningShown = true;
         }
         
         // 1 daqiqa qolganida ogohlantirish
-        if (this.remainingSeconds === 60) {
+        if (
+            this.remainingSeconds <= 60 &&
+            this.previousRemainingSeconds > 60 &&
+            !this.oneMinuteWarningShown
+        ) {
+            this.oneMinuteWarningShown = true;
             this.showWarning('1 daqiqa qoldi!', 'danger');
         }
+
+        this.previousRemainingSeconds = this.remainingSeconds;
     }
     
     showWarning(message, type = 'warning') {
+        if (!window.bootstrap || !window.bootstrap.Toast) {
+            console.warn('Bootstrap Toast mavjud emas:', message);
+            return;
+        }
+
         // Toast notification
         const toastHtml = `
             <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
@@ -214,15 +261,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Timer
     const timerElement = document.getElementById('quiz-timer');
     if (timerElement) {
-        const remainingSeconds = parseInt(timerElement.dataset.remainingSeconds);
+        const remainingSeconds = Number.parseInt(
+            timerElement.dataset.remainingSeconds,
+            10
+        );
+
+        if (!Number.isFinite(remainingSeconds)) {
+            console.error('Timer uchun remaining_seconds topilmadi.');
+            return;
+        }
         
         const timer = new QuizTimer(remainingSeconds, () => {
             // Vaqt tugaganda
             alert('Vaqt tugadi! Test avtomatik yakunlanmoqda...');
-            document.getElementById('quiz-form').submit();
-        });
+            // GET endpoint serverdagi is_time_expired() tekshiruvini ishga
+            // tushiradi va attemptni result sahifasiga yo'naltiradi.
+            window.location.assign(document.getElementById('quiz-form').action);
+        }, timerElement.dataset.expiresAt);
         
         timer.start();
+        timerElement.dataset.timerInitialized = 'true';
         
         // Form submit qilinganda timer to'xtatish
         document.getElementById('quiz-form')?.addEventListener('submit', () => {

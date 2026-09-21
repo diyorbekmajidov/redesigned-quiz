@@ -289,12 +289,17 @@ class QuizTakeView(StudentLoginRequiredMixin, TemplateView):
             for r in UserResponse.objects.filter(attempt=attempt)
         }
         
+        remaining_time = attempt.get_remaining_time()
         context = {
             'quiz': quiz,
             'attempt': attempt,
             'questions': questions,
             'responses': responses,
-            'remaining_time': attempt.get_remaining_time(),
+            'remaining_time': remaining_time,
+            'remaining_time_display': (
+                f'{remaining_time // 60:02d}:{remaining_time % 60:02d}'
+            ),
+            'expires_at_iso': attempt.get_expiration_time().isoformat(),
             'total_questions': questions.count(),
             'answered_count': len(responses),
             'is_psychological': quiz.is_psychological(),

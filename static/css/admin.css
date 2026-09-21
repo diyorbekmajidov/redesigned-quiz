@@ -1,0 +1,123 @@
+/* Campus Test admin: yengil, zich va o'qilishi oson boshqaruv interfeysi. */
+
+:root {
+    --admin-ink: #172033;
+    --admin-muted: #64748b;
+    --admin-border: #e2e8f0;
+    --admin-surface: #ffffff;
+    --admin-background: #f6f8fc;
+    --admin-primary: #4f46e5;
+}
+
+body.login-page,
+body:not(.login-page) {
+    background: var(--admin-background);
+    color: var(--admin-ink);
+}
+
+.main-header .navbar-nav .nav-link,
+.main-sidebar .nav-link,
+.content-header h1,
+.card-header h3,
+.card-header h4,
+.card-header h5 {
+    font-weight: 600;
+}
+
+.main-header .navbar-brand {
+    letter-spacing: -0.02em;
+    font-weight: 700;
+}
+
+.content-wrapper {
+    background: var(--admin-background);
+}
+
+.content-header {
+    padding-bottom: 0.75rem;
+}
+
+.content-header h1 {
+    color: var(--admin-ink);
+    font-size: 1.55rem;
+}
+
+.card,
+.module,
+.form-container {
+    border: 1px solid var(--admin-border);
+    border-radius: 0.85rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+    overflow: hidden;
+}
+
+.card-header,
+.module h2 {
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.table thead th {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--admin-border);
+    color: #475569;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background: #f8faff;
+}
+
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+.form-control,
+.custom-select,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    border-color: #cbd5e1;
+    border-radius: 0.55rem;
+    min-height: 2.45rem;
+}
+
+.form-control:focus,
+.custom-select:focus,
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.12);
+}
+
+.btn {
+    border-radius: 0.55rem;
+    font-weight: 600;
+}
+
+.object-tools .btn,
+.submit-row input,
+.submit-row a {
+    border-radius: 0.55rem;
+}
+
+.alert {
+    border-radius: 0.7rem;
+}
+
+.fieldset-heading,
+.module h2 {
+    letter-spacing: -0.01em;
+}
+
+@media (max-width: 900px) {
+    .change-list .results {
+        overflow-x: auto;
+    }
+
+    .change-list .results table {
+        min-width: 900px;
+    }
+}
