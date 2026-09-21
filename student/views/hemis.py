@@ -274,6 +274,7 @@ class AuthCallbackView(View):
         }, status=400)
     
     def _get_or_create_student(self, user_details):
+        print("Foydalanuvchi ma'lumotlari:", user_details)  # Debug uchun
         """Student yaratish yoki yangilash"""
         from student.models import Student, StudentGroup
         
@@ -304,9 +305,9 @@ class AuthCallbackView(View):
                 'email': data.get('email', ''),
                 'phone_number': data.get('phone', ''),
                 'passport_number': user_details.get('passport_number', ''),
-                'birth_date': data.get('birth_date', '2000-01-01'),
+                'birth_date': user_details.get('birth_date', '2000-01-01'),
                 'faculty': data.get('faculty', {}).get('name', ''),
-                'level': str(data.get('level', {}).get('code', '1')),
+                'level': str(data.get('level', {}).get('name', '1')),
                 'paymentForm': data.get('paymentForm', {}).get('name', 'contract'),
                 'studentStatus': data.get('studentStatus', {}).get('name', 'active'),
                 'avg_gpa': data.get('avg_gpa', 0),
