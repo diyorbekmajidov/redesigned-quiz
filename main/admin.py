@@ -4,6 +4,7 @@
 
 from django.contrib import admin
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.html import format_html
 from .models import (
     Quiz, Question, QuestionText, Option,
@@ -458,8 +459,9 @@ class QuizAttemptAdmin(admin.ModelAdmin):
         'quiz',
         'quiz_type_display',
         'status',
-        'started_at',
-        'completed_at',
+        'started_at_display',
+        'expires_at_display',
+        'completed_at_display',
         'time_display',
         'view_result'
     )
@@ -469,6 +471,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
         'quiz__quiz_type',
         'quiz',
         'started_at',
+        'expires_at',
     )
     
     search_fields = (
@@ -479,9 +482,49 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     
     readonly_fields = (
         'started_at',
+        'expires_at',
         'completed_at',
         'time_taken'
     )
+
+    fieldsets = (
+        ('Urinish ma\'lumotlari', {
+            'fields': ('student', 'quiz', 'status')
+        }),
+        ('Vaqt ma\'lumotlari', {
+            'fields': ('started_at', 'expires_at', 'completed_at', 'time_taken'),
+            'description': (
+                'Boshlangan vaqt, avtomatik tugash muddati va haqiqiy yakunlangan vaqt.'
+            )
+        }),
+    )
+
+    date_hierarchy = 'started_at'
+    ordering = ('-started_at',)
+    list_select_related = ('student', 'quiz')
+
+    @staticmethod
+    def _format_datetime(value):
+        if not value:
+            return '-'
+        return timezone.localtime(value).strftime('%d.%m.%Y %H:%M:%S')
+
+    def started_at_display(self, obj):
+        return self._format_datetime(obj.started_at)
+
+    started_at_display.short_description = 'Boshlangan vaqt'
+
+    def expires_at_display(self, obj):
+        # Eski attemptlarda expires_at null bo'lishi mumkin; modeldagi
+        # fallback orqali ularning hisoblangan tugash vaqtini ham ko'rsatamiz.
+        return self._format_datetime(obj.get_expiration_time())
+
+    expires_at_display.short_description = 'Muddati tugash vaqti'
+
+    def completed_at_display(self, obj):
+        return self._format_datetime(obj.completed_at)
+
+    completed_at_display.short_description = 'Yakunlangan vaqt'
     
     def quiz_type_display(self, obj):
         """Test turi"""
@@ -493,7 +536,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     
     def time_display(self, obj):
         """Vaqt ko'rsatish"""
-        if obj.time_taken:
+        if obj.time_taken is not None:
             minutes = obj.time_taken // 60
             seconds = obj.time_taken % 60
             return f"{minutes}m {seconds}s"
@@ -503,7 +546,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     
     def view_result(self, obj):
         """Natijani ko'rish"""
-        if obj.status == 'completed':
+        if obj.status in {'completed', 'expired'}:
             if obj.quiz.is_standard() and hasattr(obj, 'result'):
                 return format_html(
                     '<a href="/admin/main/result/{}/change/" '
