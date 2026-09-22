@@ -92,6 +92,11 @@ def backwards(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    # PostgreSQL data update'dan keyin shu migration ichida ALTER TABLE
+    # bajarilsa, "pending trigger events" xatosi berishi mumkin. Schema va
+    # data operationlari autocommit chegaralari bilan alohida bajariladi.
+    atomic = False
+
     dependencies = [
         ('student', '0004_alter_student_phone_number_and_more'),
     ]
