@@ -422,8 +422,8 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle user-profile app-nav-link app-user-menu" href="#" id="userDropdown"
                                role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {% if request.student.student_imeg %}
-                                    <img src="{{ request.student.student_imeg }}" alt="{{ request.student.student_name }}" class="user-avatar" style="object-fit: cover;">
+                                {% if request.student.student_image_url %}
+                                    <img src="{{ request.student.student_image_url }}" alt="{{ request.student.student_name }}" class="user-avatar" style="object-fit: cover;">
                                 {% else %}
                                     <div class="user-avatar">
                                         {{ request.student.student_name|first|upper }}

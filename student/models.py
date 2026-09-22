@@ -33,17 +33,21 @@ class Student(models.Model):
     )
     student_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Talaba_Ismi")
     phone_number = models.CharField(max_length=112, blank=True, null=True, verbose_name="Telfon-raqam")
-    student_imeg = models.URLField(blank=True, null=True)
-    student_id_number = models.CharField(max_length=16, unique=True, blank=True, null=True)
-    hemis_id = models.CharField(max_length=32)
-    email = models.CharField(max_length=255, verbose_name="email manzili")
-    passport_number = models.CharField(max_length=12, verbose_name="passport raqami")
-    birth_date = models.CharField(max_length=50, verbose_name="Tug'ilgan-kun-sanasi")
+    student_image_url = models.URLField(blank=True, null=True, verbose_name="Profil rasmi")
+    student_id_number = models.CharField(max_length=32, unique=True, blank=True, null=True, verbose_name="Talaba ID raqami")
+    hemis_id = models.CharField(max_length=64, unique=True, verbose_name="HEMIS ID")
+    hemis_uuid = models.CharField(max_length=64, unique=True, blank=True, null=True, verbose_name="HEMIS UUID")
+    hemis_login = models.CharField(max_length=255, blank=True, null=True, verbose_name="HEMIS login")
+    hemis_extra = models.JSONField(default=dict, blank=True, verbose_name="HEMIS qo'shimcha ma'lumotlari")
+    hemis_synced_at = models.DateTimeField(null=True, blank=True, verbose_name="HEMIS bilan oxirgi sinxronizatsiya")
+    email = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Email manzili")
+    passport_number = models.CharField(max_length=12, blank=True, null=True, verbose_name="Passport raqami")
+    birth_date = models.DateField(blank=True, null=True, verbose_name="Tug'ilgan sana")
     studentStatus = models.CharField(max_length=255, verbose_name="talaba-holati")
     paymentForm = models.CharField(max_length=255, verbose_name="to'lov shakli")
     faculty = models.CharField(max_length=255, verbose_name="fakultet")
     level = models.CharField(max_length=255, verbose_name="kurs")
-    avg_gpa = models.CharField(max_length=255, verbose_name="Gpa-bali")
+    avg_gpa = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True, verbose_name="GPA bali")
     education_type = models.CharField(max_length=255, verbose_name="ta'lim-turi")
     gender = models.CharField(max_length=56, verbose_name="jinsi")
     semester = models.CharField(max_length=56, verbose_name="semestr")
@@ -59,7 +63,7 @@ class Student(models.Model):
     date_update = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return ''
+        return self.student_name or self.student_id_number or self.hemis_id or str(self.pk)
     
     def get_level_display(self):
         return self.level

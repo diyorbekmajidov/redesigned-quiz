@@ -274,8 +274,8 @@ body.sidebar-collapse .sp-sticky-bar { left: 0; }
 {# Profile card #}
 {% if original %}
 <div class="sp-profile">
-    {% if original.student_imeg %}
-    <img src="{{ original.student_imeg }}" class="sp-ava" alt="{{ original.student_name }}" />
+    {% if original.student_image_url %}
+    <img src="{{ original.student_image_url }}" class="sp-ava" alt="{{ original.student_name }}" />
     {% else %}
     <div class="sp-ava-ph">
         {{ original.student_name|default:"T"|slice:":1"|upper }}

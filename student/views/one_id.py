@@ -5,6 +5,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from rest_framework.views import APIView
 from django.shortcuts import redirect
 from dotenv import load_dotenv
+import logging
 
 import requests
 import os
@@ -21,6 +22,8 @@ redirect_url = os.getenv("redirect_uri")
 scope = os.getenv("scope")
 state = os.getenv("state")
 
+logger = logging.getLogger(__name__)
+
 
 class One_code(APIView):
     def get(self, request):
@@ -31,9 +34,8 @@ class One_code(APIView):
             "scope": "uzfi_uz",
             "state": "testState",
         }
-        print(params)
         response = requests.get(auth_url, params=params)
-        print(response)
+        logger.info("OneID authorization redirect tayyorlandi")
         return redirect(response.url)
 
 # def One_code(request):

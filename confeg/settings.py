@@ -175,13 +175,30 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 JAZZMIN_SETTINGS = {
-    "site_title": "Psixologiya Admin",
-    "site_header": "Psixologiya Admin",
-    "welcome_sign": "Xush kelibsiz Psixologiya Admin paneliga",
-    "copyright": "Psixologiya © 2024",
-    "search_model": "auth.User",
+    "site_title": "Campus Test Admin",
+    "site_header": "Campus Test",
+    "site_brand": "Campus Test",
+    "welcome_sign": "Campus Test boshqaruv paneliga xush kelibsiz",
+    "copyright": "Campus Test",
+    "search_model": ["main.Quiz", "student.Student", "student.StudentGroup"],
     "show_sidebar": True,
     "navigation_expanded": True,
+    "related_modal_active": True,
+    "changeform_format": "horizontal_tabs",
+    "custom_css": "css/admin.css",
+    "topmenu_links": [
+        {
+            "name": "Bosh sahifa",
+            "url": "admin:index",
+            "icon": "fas fa-home",
+        },
+        {
+            "name": "Psixologik statistika",
+            "url": "/admin-stats/psychological/",
+            "icon": "fas fa-chart-line",
+            "permissions": ["main.view_psychologicalresult"],
+        },
+    ],
     "icons": {
         'student': "fas fa-users-cog",
         "student.Student": "fas fa-user",
@@ -202,15 +219,24 @@ JAZZMIN_SETTINGS = {
         "UserSession.UserSession": "fas fa-user-shield",
         "UserSession.LoginHistory": "fas fa-history",
     },
-    "custom_links": {
-        "main": [
-            {
-                "name": "📊 Psixologik Statistika",
-                "url": "/admin-stats/psychological/",
-                "icon": "fas fa-chart-bar",
-                "permissions": ["main.view_psychologicalresult"],
-            }
-        ]
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    "accent": "accent-primary",
+    "navbar": "navbar-white navbar-light",
+    "sidebar": "sidebar-dark-primary",
+    "navbar_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar_nav_flat_style": True,
+    "sidebar_nav_child_indent": True,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
     },
 }
 

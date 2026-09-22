@@ -45,13 +45,16 @@ class StudentAdmin(admin.ModelAdmin):
 
     search_fields = ('student_name', 'student_id_number', 'email', 'hemis_id')
     list_filter = ('faculty', 'level', 'gender', 'studentStatus', 'group')
-    readonly_fields = ('date_created', 'date_update')
+    readonly_fields = (
+        'date_created', 'date_update',
+        'hemis_uuid', 'hemis_login', 'hemis_extra', 'hemis_synced_at',
+    )
 
     fieldsets = (
         ("📋 Asosiy Ma'lumotlar", {
             'fields': (
                 'student_name', 'student_id_number', 'hemis_id',
-                'email', 'phone_number', 'student_imeg',
+                'email', 'phone_number', 'student_image_url',
             )
         }),
         ("🎓 Ta'lim Ma'lumotlari", {
@@ -67,7 +70,10 @@ class StudentAdmin(admin.ModelAdmin):
             )
         }),
         ("🕐 Sistema", {
-            'fields': ('date_created', 'date_update'),
+            'fields': (
+                'hemis_uuid', 'hemis_login', 'hemis_synced_at', 'hemis_extra',
+                'date_created', 'date_update',
+            ),
             'classes': ('collapse',),
         }),
     )
@@ -75,11 +81,11 @@ class StudentAdmin(admin.ModelAdmin):
     # ── List display helpers ──────────────────
 
     def photo_thumbnail(self, obj):
-        if obj.student_imeg:
+        if obj.student_image_url:
             return format_html(
                 '<img src="{}" style="width:40px;height:40px;border-radius:50%;'
                 'object-fit:cover;border:2px solid #7C3AED;" />',
-                obj.student_imeg
+                obj.student_image_url
             )
         initials = (obj.student_name or 'T')[:1].upper()
         return format_html(

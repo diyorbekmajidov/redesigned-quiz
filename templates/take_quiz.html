@@ -298,8 +298,8 @@
             <div class="progress-info">
                 <!-- Student Info - Rasm va Ism -->
                 <div class="student-info">
-                    {% if request.student.student_imeg %}
-                        <img src="{{ request.student.student_imeg }}" alt="{{ request.student.student_name }}" class="student-avatar">
+                    {% if request.student.student_image_url %}
+                        <img src="{{ request.student.student_image_url }}" alt="{{ request.student.student_name }}" class="student-avatar">
                     {% else %}
                         <div class="student-avatar-placeholder">
                             {{ request.student.student_name|first|upper }}

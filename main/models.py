@@ -4,8 +4,14 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from student.models import Student
+import logging
 import random
+
+
+logger = logging.getLogger(__name__)
 
 
 class Quiz(models.Model):
@@ -65,8 +71,6 @@ class Quiz(models.Model):
     def can_attempt(self, student):
         """Talaba bu testni urinishlar soni"""
         student_attempts = QuizAttempt.objects.filter(student=student, quiz=self).count()
-        print(student_attempts, self.attempt_limit)
-        print(student_attempts < self.attempt_limit)
         return student_attempts < self.attempt_limit
 
 
@@ -105,6 +109,10 @@ class PsychologicalScale(models.Model):
     def __str__(self):
         return f"{self.quiz.title} - {self.name}"
 
+    def clean(self):
+        if self.quiz and not self.quiz.is_psychological():
+            raise ValidationError("Psixologik shkala faqat psixologik testga tegishli bo'lishi mumkin.")
+
 
 class PsychologicalCategory(models.Model):
     """
@@ -139,9 +147,23 @@ class PsychologicalCategory(models.Model):
         verbose_name = "Kategoriya"
         verbose_name_plural = "Kategoriyalar"
         ordering = ['scale', 'order']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(min_score__lte=models.F('max_score')),
+                name='psych_category_min_lte_max',
+            ),
+        ]
     
     def __str__(self):
         return f"{self.name} ({self.min_score}-{self.max_score})"
+
+    def clean(self):
+        if self.min_score > self.max_score:
+            raise ValidationError("Minimal ball maksimal balldan katta bo'lishi mumkin emas.")
+
+        if self.scale_id and self.scale.quiz_id:
+            if self.scale.quiz.quiz_type != 'psychological':
+                raise ValidationError("Kategoriya faqat psixologik test shkalasiga tegishli bo'lishi mumkin.")
     
     def matches_score(self, score):
         """Ball bu kategoriyaga mos keladimi?"""
@@ -183,8 +205,6 @@ class Question(models.Model):
     
     def clean(self):
         """Validatsiya"""
-        from django.core.exceptions import ValidationError
-        
         if self.quiz and self.quiz.is_psychological() and not self.psychological_scale:
             raise ValidationError(
                 "Psixologik testda har bir savol shkala bilan bog'lanishi kerak!"
@@ -194,6 +214,9 @@ class Question(models.Model):
             raise ValidationError(
                 "Standart testda shkala ishlatilmaydi!"
             )
+
+        if self.psychological_scale and self.quiz_id != self.psychological_scale.quiz_id:
+            raise ValidationError("Savol shkalasi aynan shu testga tegishli bo'lishi kerak.")
 
 
 class QuestionText(models.Model):
@@ -220,67 +243,68 @@ class QuestionText(models.Model):
         if self.pk and self.is_processed:
             super().save(*args, **kwargs)
             return
-            
-        super().save(*args, **kwargs)
-        
-        try:
-            questions = self.question_text.split('+++++')
-            current_order = self.quiz.questions.count()
 
-            for q_text in questions:
-                q_text = q_text.strip()
-                if not q_text:
-                    continue
-                    
-                parts = q_text.split('=====')
-                if len(parts) < 2:
-                    continue
-                    
-                question_text = parts[0].strip()
-                options = parts[1:]
-                
-                if not options:
-                    continue
-                
-                options_list = []
-                has_correct = False
-                for option in options:
-                    option_text = option.strip()
-                    if not option_text:
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            try:
+                questions = self.question_text.split('+++++')
+                current_order = self.quiz.questions.count()
+
+                for q_text in questions:
+                    q_text = q_text.strip()
+                    if not q_text:
                         continue
-                        
-                    is_correct = option_text.startswith('#')
-                    if is_correct:
-                        option_text = option_text[1:].strip()
-                        has_correct = True
-                    options_list.append((option_text, is_correct))
-                
-                if not has_correct or not options_list:
-                    continue
-                
-                random.shuffle(options_list)
 
-                question = Question.objects.create(
-                    quiz=self.quiz,
-                    question_text=question_text,
-                    score=self.score,
-                    order=current_order
-                )
-                current_order += 1
-                
-                for option_text, is_correct in options_list:
-                    Option.objects.create(
-                        question=question,
-                        option_text=option_text,
-                        is_correct=is_correct
+                    parts = q_text.split('=====')
+                    if len(parts) < 2:
+                        continue
+
+                    question_text = parts[0].strip()
+                    options = parts[1:]
+
+                    if not options:
+                        continue
+
+                    options_list = []
+                    has_correct = False
+                    for option in options:
+                        option_text = option.strip()
+                        if not option_text:
+                            continue
+
+                        is_correct = option_text.startswith('#')
+                        if is_correct:
+                            option_text = option_text[1:].strip()
+                            has_correct = True
+                        options_list.append((option_text, is_correct))
+
+                    if not has_correct or not options_list:
+                        continue
+
+                    random.shuffle(options_list)
+
+                    question = Question.objects.create(
+                        quiz=self.quiz,
+                        question_text=question_text,
+                        score=self.score,
+                        order=current_order
                     )
-            
-            self.is_processed = True
-            super().save(update_fields=['is_processed'])
-            
-        except Exception as e:
-            print(f"Xatolik: {e}")
-            raise
+                    current_order += 1
+
+                    for option_text, is_correct in options_list:
+                        Option.objects.create(
+                            question=question,
+                            option_text=option_text,
+                            is_correct=is_correct
+                        )
+
+                self.is_processed = True
+                super().save(update_fields=['is_processed'])
+
+            except Exception:
+                logger.exception("Bulk savollarni qayta ishlashda xatolik yuz berdi")
+                raise
 
     def __str__(self):
         status = "✓ Qayta ishlangan" if self.is_processed else "⏳ Kutilmoqda"
@@ -318,8 +342,6 @@ class Option(models.Model):
     
     def clean(self):
         """Validatsiya"""
-        from django.core.exceptions import ValidationError
-        
         # Psixologik testda is_correct ishlatilmasligi kerak
         if self.question.quiz.is_psychological() and self.is_correct:
             raise ValidationError(
@@ -410,33 +432,52 @@ class QuizAttempt(models.Model):
             self.expires_at = start_time + timedelta(minutes=self.quiz.time_limit)
         super().save(*args, **kwargs)
     
+    @transaction.atomic
     def complete_attempt(self):
         """Testni tugatish va natijani hisoblash"""
-        if self.status == 'in_progress':
-            self.status = 'completed'
-            self.completed_at = timezone.now()
-            self.time_taken = int((self.completed_at - self.started_at).total_seconds())
-            self.save()
-            
-            # Natijani hisoblash
-            if self.quiz.is_standard():
-                Result.calculate_result(self)
-            else:
-                PsychologicalResult.calculate_result(self)
-    
+        attempt = type(self).objects.select_for_update().select_related('quiz').get(pk=self.pk)
+        if attempt.status != 'in_progress':
+            return False
+
+        attempt.status = 'completed'
+        attempt.completed_at = timezone.now()
+        attempt.time_taken = int((attempt.completed_at - attempt.started_at).total_seconds())
+        attempt.save(update_fields=['status', 'completed_at', 'time_taken'])
+
+        if attempt.quiz.is_standard():
+            Result.calculate_result(attempt)
+        else:
+            PsychologicalResult.calculate_result(attempt)
+
+        self.status = attempt.status
+        self.completed_at = attempt.completed_at
+        self.time_taken = attempt.time_taken
+        return True
+
+    @transaction.atomic
     def expire_attempt(self):
         """Vaqt tugaganda testni yakunlash"""
-        if self.status == 'in_progress':
-            self.status = 'expired'
-            self.completed_at = timezone.now()
-            self.time_taken = self.quiz.time_limit * 60
-            self.save()
-            
-            # Natijani hisoblash
-            if self.quiz.is_standard():
-                Result.calculate_result(self)
-            else:
-                PsychologicalResult.calculate_result(self)
+        attempt = type(self).objects.select_for_update().select_related('quiz').get(pk=self.pk)
+        if attempt.status != 'in_progress':
+            return False
+
+        attempt.status = 'expired'
+        attempt.completed_at = timezone.now()
+        attempt.time_taken = max(
+            0,
+            int((attempt.get_expiration_time() - attempt.started_at).total_seconds()),
+        )
+        attempt.save(update_fields=['status', 'completed_at', 'time_taken'])
+
+        if attempt.quiz.is_standard():
+            Result.calculate_result(attempt)
+        else:
+            PsychologicalResult.calculate_result(attempt)
+
+        self.status = attempt.status
+        self.completed_at = attempt.completed_at
+        self.time_taken = attempt.time_taken
+        return True
 
 
 class UserResponse(models.Model):
@@ -502,13 +543,18 @@ class UserResponse(models.Model):
                 # Psixologik test
                 self.is_correct = False  # Psixologik testda to'g'ri/noto'g'ri yo'q
                 self.earned_score = self.selected_option.psychological_score
-        
+
+        # Django save() clean()ni avtomatik chaqirmaydi. Javoblar admin yoki
+        # boshqa service orqali yozilganda ham quiz chegaralari tekshirilsin.
+        self.full_clean()
         super().save(*args, **kwargs)
     
     def clean(self):
         """Validatsiya"""
-        from django.core.exceptions import ValidationError
-        
+        if self.attempt_id and self.question_id:
+            if self.question.quiz_id != self.attempt.quiz_id:
+                raise ValidationError("Javob savolining testi attempt testiga mos kelmaydi.")
+
         if self.selected_option and self.selected_option.question != self.question:
             raise ValidationError("Tanlangan variant bu savolga tegishli emas!")
 
@@ -705,6 +751,14 @@ class PsychologicalScaleResult(models.Model):
         verbose_name = "Shkala natijasi"
         verbose_name_plural = "Shkala natijalari"
         unique_together = ['result', 'scale']
+
+    def clean(self):
+        if self.result_id and self.scale_id:
+            if self.result.attempt.quiz_id != self.scale.quiz_id:
+                raise ValidationError("Shkala natijadagi attempt testi bilan bir xil bo'lishi kerak.")
+
+        if self.category_id and self.category.scale_id != self.scale_id:
+            raise ValidationError("Kategoriya tanlangan shkalaga tegishli emas.")
     
     def __str__(self):
         return f"{self.scale.name}: {self.total_score} ball"

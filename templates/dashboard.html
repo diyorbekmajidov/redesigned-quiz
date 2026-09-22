@@ -38,8 +38,8 @@
             </div>
             <div class="col-md-4 text-md-end">
                 <!-- ✨ Student rasmi (HEMIS) -->
-                {% if student.student_imeg %}
-                    <img src="{{ student.student_imeg }}" alt="{{ student.student_name }}" 
+                {% if student.student_image_url %}
+                    <img src="{{ student.student_image_url }}" alt="{{ student.student_name }}"
                          class="app-profile-avatar" style="object-fit: cover;">
                 {% else %}
                     <div class="app-profile-avatar">
