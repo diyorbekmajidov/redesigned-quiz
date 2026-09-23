@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psixologik passportlar | Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#6b7280; --line:#e7eaf0; --primary:#6256e8; --primary-soft:#efedff; --red:#dc3545; --red-soft:#fff0f1; --orange:#ea7b22; --yellow:#b17b00; --green:#168653; --shadow:0 12px 32px rgba(31,41,55,.07); }
+        * { box-sizing:border-box; }
+        body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,sans-serif; }
+        a { color:inherit; }
+        .topbar { min-height:70px; padding:14px 32px; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:20px; }
+        .brand { display:flex; align-items:center; gap:12px; }
+        .brand-icon { width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background:var(--primary-soft); font-size:20px; }
+        .brand-title { font-size:17px; font-weight:800; }
+        .brand-subtitle { margin-top:3px; color:var(--muted); font-size:12px; }
+        .top-actions { display:flex; gap:10px; }
+        .button { min-height:38px; display:inline-flex; align-items:center; gap:7px; padding:0 14px; border:1px solid var(--line); border-radius:9px; background:#fff; color:#4b5563; text-decoration:none; font-size:13px; font-weight:600; white-space:nowrap; }
+        .button:hover { border-color:#b9b5ff; color:var(--primary); }
+        .button.primary { border-color:var(--primary); background:var(--primary); color:#fff; }
+        .container { max-width:1440px; margin:0 auto; padding:30px 28px 50px; }
+        .heading { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:22px; }
+        h1 { margin:0 0 7px; font-size:28px; letter-spacing:-.03em; }
+        .lead { margin:0; color:var(--muted); font-size:14px; line-height:1.55; }
+        .stats { display:flex; gap:10px; flex-wrap:wrap; }
+        .stat { min-width:130px; padding:12px 15px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:var(--shadow); }
+        .stat-number { display:block; font-size:23px; font-weight:800; color:var(--primary); }
+        .stat-label { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:600; }
+        .notice { display:flex; gap:12px; align-items:flex-start; margin-bottom:20px; padding:14px 16px; border:1px solid #e4e0ff; border-radius:12px; background:#faf9ff; color:#514b82; font-size:13px; line-height:1.55; }
+        .notice strong { color:#39326f; }
+        .filters { display:grid; grid-template-columns:minmax(250px,1.6fr) repeat(3,minmax(160px,1fr)) auto auto; gap:10px; align-items:center; padding:16px; margin-bottom:20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:var(--shadow); }
+        .field input, .field select { width:100%; height:40px; padding:0 11px; border:1px solid var(--line); border-radius:8px; background:#fbfcfe; color:var(--text); outline:none; font:inherit; font-size:13px; }
+        .field input:focus, .field select:focus { border-color:#aca7ff; box-shadow:0 0 0 3px var(--primary-soft); }
+        .filter-submit { height:40px; padding:0 15px; border:0; border-radius:8px; background:var(--primary); color:#fff; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+        .clear-link { color:var(--muted); font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
+        .table-card { overflow:hidden; border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:var(--shadow); }
+        .table-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:17px 20px; border-bottom:1px solid var(--line); }
+        .table-title { font-size:15px; font-weight:800; }
+        .table-meta { color:var(--muted); font-size:12px; }
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; min-width:1000px; border-collapse:collapse; }
+        th { padding:12px 18px; background:#fafbfe; color:#7a8292; text-align:left; text-transform:uppercase; letter-spacing:.04em; font-size:11px; font-weight:700; white-space:nowrap; }
+        td { padding:14px 18px; border-top:1px solid #f0f1f5; vertical-align:middle; font-size:13px; }
+        tr:hover td { background:#fcfcff; }
+        .student-cell { display:flex; align-items:center; gap:11px; min-width:240px; }
+        .avatar, .avatar-placeholder { width:38px; height:38px; flex:0 0 38px; border-radius:50%; object-fit:cover; }
+        .avatar-placeholder { display:grid; place-items:center; background:var(--primary-soft); color:var(--primary); font-weight:800; }
+        .student-name { display:block; color:#252c3d; font-weight:700; text-decoration:none; }
+        .student-name:hover { color:var(--primary); }
+        .student-id { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
+        .muted { color:var(--muted); }
+        .status { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+        .status.red { background:var(--red-soft); color:#c42f3e; }
+        .status.orange { background:#fff4e9; color:#b95f12; }
+        .status.yellow { background:#fff9df; color:var(--yellow); }
+        .status.green { background:#eaf8f0; color:var(--green); }
+        .status.none { background:#f1f3f6; color:#7c8492; }
+        .scale-count { color:#252c3d; font-weight:700; }
+        .empty { padding:70px 20px; text-align:center; }
+        .empty-icon { margin-bottom:12px; font-size:42px; }
+        .empty-title { margin-bottom:7px; font-weight:800; }
+        .empty-text { color:var(--muted); font-size:13px; }
+        .pagination { display:flex; justify-content:center; align-items:center; gap:7px; padding:20px; }
+        .page-link { min-width:34px; height:34px; display:grid; place-items:center; padding:0 9px; border:1px solid var(--line); border-radius:7px; background:#fff; color:#596273; text-decoration:none; font-size:12px; font-weight:600; }
+        .page-link.current { border-color:var(--primary); background:var(--primary); color:#fff; }
+        .page-link.disabled { opacity:.45; pointer-events:none; }
+        @media (max-width:1100px) { .filters { grid-template-columns:repeat(3,1fr); } .filters .search { grid-column:span 2; } }
+        @media (max-width:700px) { .topbar { padding:13px 16px; align-items:flex-start; } .top-actions .button:not(.primary) { display:none; } .container { padding:22px 14px 35px; } .heading { display:block; } .stats { margin-top:16px; } .filters, .filters .search { display:block; } .field, .filter-submit { width:100%; margin-bottom:9px; } .clear-link { display:inline-block; margin:3px 0 4px; } }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">🧠</div>
+            <div><div class="brand-title">Talabalar psixologik passporti</div><div class="brand-subtitle">Barcha talabalar bo‘yicha test tarixi va holat ko‘rinishi</div></div>
+        </div>
+        <div class="top-actions">
+            <a class="button primary" href="{% url 'admin_psychological_risk_students' %}">🔴 Qizil talabalar</a>
+            <a class="button" href="{% url 'admin_psychological_stats' %}">📊 Statistika</a>
+            <a class="button" href="/admin/">Admin panel</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="heading">
+            <div><h1>Barcha talabalar</h1><p class="lead">Passport test natijalari mavjud bo‘lgan va hali test topshirmagan talabalar uchun ham ochiq.</p></div>
+            <div class="stats"><div class="stat"><span class="stat-number">{{ total_students }}</span><span class="stat-label">Jami talaba</span></div><div class="stat"><span class="stat-number">{{ tested_on_page }}</span><span class="stat-label">Bu sahifada test topshirgan</span></div></div>
+        </section>
+
+        <div class="notice"><span>ℹ️</span><div><strong>Passport hozircha read-only.</strong> U mavjud psixologik natijalardan tuziladi. Case, izoh, task va tutor bilan ishlash qismlari keyingi bosqichda shu sahifaga ulanadi.</div></div>
+
+        <form method="get" class="filters">
+            <div class="field search"><input type="search" name="q" value="{{ search_query }}" placeholder="Ism, talaba ID yoki HEMIS ID..." autocomplete="off"></div>
+            <div class="field"><select name="faculty"><option value="">Barcha fakultetlar</option>{% for faculty in faculties %}<option value="{{ faculty }}" {% if selected_faculty == faculty %}selected{% endif %}>{{ faculty }}</option>{% endfor %}</select></div>
+            <div class="field"><select name="level"><option value="">Barcha kurslar</option>{% for level in levels %}<option value="{{ level }}" {% if selected_level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select></div>
+            <div class="field"><select name="group"><option value="">Barcha guruhlar</option>{% for group in groups %}<option value="{{ group.id }}" {% if selected_group_id == group.id|stringformat:'s' %}selected{% endif %}>{{ group.group_name }}</option>{% endfor %}</select></div>
+            <button class="filter-submit" type="submit">Filtrlash</button>
+            {% if search_query or selected_faculty or selected_level or selected_group_id %}<a class="clear-link" href="{% url 'admin_psychological_passports' %}">Tozalash</a>{% endif %}
+        </form>
+
+        <section class="table-card">
+            <div class="table-head"><div class="table-title">👥 Talabalar passportlari</div><div class="table-meta">{{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} / {{ total_students }}</div></div>
+            {% if students %}
+            <div class="table-wrap"><table>
+                <thead><tr><th>Talaba</th><th>Fakultet / kurs</th><th>Guruh</th><th>Joriy holat</th><th>Testlar</th><th>So‘nggi natija</th><th></th></tr></thead>
+                <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><div class="student-cell">{% if student.student_image_url %}<img class="avatar" src="{{ student.student_image_url }}" alt="{{ student.student_name }}">{% else %}<div class="avatar-placeholder">{{ student.student_name|default:'T'|slice:':1'|upper }}</div>{% endif %}<div><a class="student-name" href="{% url 'admin_psychological_passport_detail' student.pk %}">{{ student.student_name|default:'Noma’lum talaba' }}</a><span class="student-id">{{ student.student_id_number|default:student.hemis_id|default:'ID mavjud emas' }}</span></div></div></td>
+                    <td><div>{{ student.faculty|default:'-' }}</div><div class="muted">{{ student.level|default:'-' }}-kurs</div></td>
+                    <td class="muted">{% if student.group %}{{ student.group.group_name }}{% else %}-{% endif %}</td>
+                    <td><span class="status {{ student.passport_summary.worst_color }}">{% if student.passport_summary.worst_color == 'red' %}🔴{% elif student.passport_summary.worst_color == 'orange' %}🟠{% elif student.passport_summary.worst_color == 'yellow' %}🟡{% elif student.passport_summary.worst_color == 'green' %}🟢{% else %}⚪{% endif %} {{ student.passport_summary.worst_label }}</span></td>
+                    <td><span class="scale-count">{{ student.passport_summary.test_count }}</span> <span class="muted">ta</span></td>
+                    <td class="muted">{% if student.passport_summary.latest_result %}{{ student.passport_summary.latest_result.created_at|date:'d.m.Y H:i' }}{% else %}Natija yo‘q{% endif %}</td>
+                    <td><a class="button" href="{% url 'admin_psychological_passport_detail' student.pk %}">Passport →</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            {% else %}<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Talabalar topilmadi</div><div class="empty-text">Qidiruv yoki tanlangan filtrlarni o‘zgartirib ko‘ring.</div></div>{% endif %}
+            {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination" aria-label="Sahifalar">{% if page_obj.has_previous %}<a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_query %}&{{ filter_query }}{% endif %}">‹</a>{% else %}<span class="page-link disabled">‹</span>{% endif %}{% for number in page_obj.paginator.page_range %}{% if number == page_obj.number %}<span class="page-link current">{{ number }}</span>{% else %}<a class="page-link" href="?page={{ number }}{% if filter_query %}&{{ filter_query }}{% endif %}">{{ number }}</a>{% endif %}{% endfor %}{% if page_obj.has_next %}<a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_query %}&{{ filter_query }}{% endif %}">›</a>{% else %}<span class="page-link disabled">›</span>{% endif %}</nav>{% endif %}
+        </section>
+    </main>
+</body>
+</html>

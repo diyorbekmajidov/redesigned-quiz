@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
 from student.models import Student
 from .models import Option, Question, Quiz, QuizAttempt, UserResponse
@@ -8,7 +9,7 @@ from .models import Option, Question, Quiz, QuizAttempt, UserResponse
 
 class QuizIntegrityTests(TestCase):
     def setUp(self):
-        self.admin_user = User.objects.create_user(username='test-admin')
+        self.admin_user = User.objects.create_user(username='test-admin', is_staff=True)
         self.student = Student.objects.create(
             student_name='Test Student',
             hemis_id='hemis-test-1',
@@ -36,6 +37,22 @@ class QuizIntegrityTests(TestCase):
             option_text='Correct option',
             is_correct=True,
         )
+
+    def test_psychological_passport_works_without_test_result(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('admin_psychological_passports'))
+        detail_response = self.client.get(
+            reverse(
+                'admin_psychological_passport_detail',
+                kwargs={'student_id': self.student.pk},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Barcha talabalar')
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, 'Hali psixologik test topshirilmagan')
 
     def test_response_rejects_question_from_another_quiz(self):
         other_quiz = Quiz.objects.create(

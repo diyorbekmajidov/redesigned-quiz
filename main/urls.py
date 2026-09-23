@@ -5,6 +5,7 @@ from .views import (
     StudentStatisticsView, ResultsHistoryView,
     PsychologicalTestsView, PsychologicalResultsView,
     AdminPsychologicalStatisticsView, AdminPsychologicalRiskStudentsView,
+    AdminPsychologicalPassportsView, AdminPsychologicalPassportDetailView,
 )
 
 
@@ -24,4 +25,6 @@ urlpatterns = [
     path('quiz/psychological/', PsychologicalTestsView.as_view(), name='psychological_tests'),
     path('admin-stats/psychological/', AdminPsychologicalStatisticsView.as_view(), name='admin_psychological_stats'),
     path('admin-stats/psychological/red-students/', AdminPsychologicalRiskStudentsView.as_view(), name='admin_psychological_risk_students'),
+    path('admin-stats/psychological/passports/', AdminPsychologicalPassportsView.as_view(), name='admin_psychological_passports'),
+    path('admin-stats/psychological/passports/<uuid:student_id>/', AdminPsychologicalPassportDetailView.as_view(), name='admin_psychological_passport_detail'),
 ]

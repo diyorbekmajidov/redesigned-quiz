@@ -1020,3 +1020,193 @@ class AdminPsychologicalRiskStudentsView(TemplateView):
             'groups': StudentGroup.objects.all().order_by('group_name'),
         })
         return context
+
+
+PSYCHOLOGICAL_COLOR_PRIORITY = {
+    'red': 0,
+    'orange': 1,
+    'yellow': 2,
+    'green': 3,
+}
+PSYCHOLOGICAL_COLOR_LABELS = {
+    'red': 'Qizil',
+    'orange': "To'q sariq",
+    'yellow': 'Sariq',
+    'green': 'Yashil',
+    'none': 'Natija yo‘q',
+}
+
+
+def _psychological_result_summary(result):
+    """Template uchun bitta psixologik natijani xavfsiz umumlashtiradi."""
+    scale_results = list(result.scale_results.all())
+    colored = [
+        scale_result.category.color
+        for scale_result in scale_results
+        if scale_result.category
+    ]
+    worst_color = min(
+        colored,
+        key=lambda color: PSYCHOLOGICAL_COLOR_PRIORITY.get(color, 99),
+        default='none',
+    )
+    return {
+        'scale_results': scale_results,
+        'worst_color': worst_color,
+        'worst_label': PSYCHOLOGICAL_COLOR_LABELS.get(worst_color, 'Noma’lum'),
+        'red_count': sum(1 for color in colored if color == 'red'),
+    }
+
+
+def _psychological_attempt_result(attempt):
+    """Attemptdagi optional OneToOne natijani RelatedObjectDoesNotExist'siz oladi."""
+    from main.models import PsychologicalResult
+
+    try:
+        return attempt.psychological_result
+    except PsychologicalResult.DoesNotExist:
+        return None
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminPsychologicalPassportsView(TemplateView):
+    """Barcha talabalar uchun psixologik passportlar ro'yxati."""
+
+    template_name = 'admin_psychological_passports.html'
+    page_size = 20
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import Prefetch, prefetch_related_objects
+        from main.models import PsychologicalResult, PsychologicalScaleResult, QuizAttempt
+        from student.models import Student, StudentGroup
+
+        search_query = self.request.GET.get('q', '').strip()
+        selected_faculty = self.request.GET.get('faculty', '')
+        selected_level = self.request.GET.get('level', '')
+        selected_group_id = self.request.GET.get('group', '')
+
+        students_qs = Student.objects.select_related('group').order_by('student_name', 'student_id_number')
+        if search_query:
+            students_qs = students_qs.filter(
+                Q(student_name__icontains=search_query)
+                | Q(student_id_number__icontains=search_query)
+                | Q(hemis_id__icontains=search_query)
+            )
+        if selected_faculty:
+            students_qs = students_qs.filter(faculty=selected_faculty)
+        if selected_level:
+            students_qs = students_qs.filter(level=selected_level)
+        if selected_group_id:
+            students_qs = students_qs.filter(group_id=selected_group_id)
+
+        paginator = Paginator(students_qs, self.page_size)
+        page_obj = paginator.get_page(self.request.GET.get('page', '1'))
+        page_students = list(page_obj.object_list)
+
+        scale_results = PsychologicalScaleResult.objects.select_related('scale', 'category')
+        psych_attempts = QuizAttempt.objects.filter(
+            quiz__quiz_type='psychological',
+            status__in=('completed', 'expired'),
+        ).select_related('quiz', 'psychological_result').prefetch_related(
+            Prefetch('psychological_result__scale_results', queryset=scale_results)
+        ).order_by('-started_at', '-id')
+        prefetch_related_objects(
+            page_students,
+            Prefetch('quiz_attempts', queryset=psych_attempts, to_attr='psychological_attempts'),
+        )
+
+        tested_on_page = 0
+        for student in page_students:
+            results = [
+                result for attempt in getattr(student, 'psychological_attempts', [])
+                for result in [_psychological_attempt_result(attempt)]
+                if result is not None
+            ]
+            results.sort(key=lambda result: (result.created_at, result.id), reverse=True)
+            latest_result = results[0] if results else None
+            summary = _psychological_result_summary(latest_result) if latest_result else {
+                'scale_results': [],
+                'worst_color': 'none',
+                'worst_label': PSYCHOLOGICAL_COLOR_LABELS['none'],
+                'red_count': 0,
+            }
+            if latest_result:
+                tested_on_page += 1
+                summary['latest_result'] = latest_result
+            else:
+                summary['latest_result'] = None
+            summary['test_count'] = len(results)
+            student.passport_summary = summary
+
+        filter_params = self.request.GET.copy()
+        filter_params.pop('page', None)
+        context.update({
+            'page_obj': page_obj,
+            'students': page_students,
+            'total_students': paginator.count,
+            'tested_on_page': tested_on_page,
+            'search_query': search_query,
+            'selected_faculty': selected_faculty,
+            'selected_level': selected_level,
+            'selected_group_id': selected_group_id,
+            'filter_query': filter_params.urlencode(),
+            'faculties': Student.objects.values_list('faculty', flat=True).distinct().exclude(
+                faculty__isnull=True
+            ).exclude(faculty='').order_by('faculty'),
+            'levels': Student.objects.values_list('level', flat=True).distinct().exclude(
+                level__isnull=True
+            ).exclude(level='').order_by('level'),
+            'groups': StudentGroup.objects.all().order_by('group_name'),
+        })
+        return context
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminPsychologicalPassportDetailView(TemplateView):
+    """Bitta talabaning barcha psixologik natijalari asosidagi passporti."""
+
+    template_name = 'admin_psychological_passport_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import Prefetch
+        from main.models import PsychologicalResult, PsychologicalScaleResult
+        from student.models import Student
+
+        student = get_object_or_404(
+            Student.objects.select_related('group'),
+            pk=self.kwargs['student_id'],
+        )
+        results = list(
+            PsychologicalResult.objects.filter(
+                attempt__student=student,
+                attempt__quiz__quiz_type='psychological',
+            ).select_related(
+                'attempt__quiz',
+            ).prefetch_related(
+                Prefetch(
+                    'scale_results',
+                    queryset=PsychologicalScaleResult.objects.select_related('scale', 'category'),
+                )
+            ).order_by('-created_at', '-id')
+        )
+
+        for result in results:
+            result.passport_summary = _psychological_result_summary(result)
+
+        latest_result = results[0] if results else None
+        latest_summary = _psychological_result_summary(latest_result) if latest_result else {
+            'scale_results': [],
+            'worst_color': 'none',
+            'worst_label': PSYCHOLOGICAL_COLOR_LABELS['none'],
+            'red_count': 0,
+        }
+        context.update({
+            'student': student,
+            'results': results,
+            'latest_result': latest_result,
+            'latest_summary': latest_summary,
+            'total_results': len(results),
+        })
+        return context

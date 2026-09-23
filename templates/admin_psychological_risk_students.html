@@ -147,6 +147,7 @@
             </div>
         </div>
         <div class="top-actions">
+            <a class="button" href="{% url 'admin_psychological_passports' %}">🧠 Barcha passportlar</a>
             <a class="button primary" href="{% url 'admin_psychological_stats' %}">📊 Statistika</a>
             <a class="button" href="/admin/">Admin panel</a>
         </div>
@@ -214,7 +215,7 @@
                         <td>
                             <div class="student-cell">
                                 {% if row.student.student_image_url %}<img class="avatar" src="{{ row.student.student_image_url }}" alt="{{ row.student.student_name }}">{% else %}<div class="avatar-placeholder">{{ row.student.student_name|default:'T'|slice:':1'|upper }}</div>{% endif %}
-                                <div><a class="student-name" href="{% url 'admin:student_student_change' row.student.pk %}">{{ row.student.student_name|default:'Noma’lum talaba' }}</a><span class="student-id">{{ row.student.student_id_number|default:row.student.hemis_id|default:'ID mavjud emas' }}</span></div>
+                                <div><a class="student-name" href="{% url 'admin_psychological_passport_detail' row.student.pk %}">{{ row.student.student_name|default:'Noma’lum talaba' }}</a><span class="student-id">{{ row.student.student_id_number|default:row.student.hemis_id|default:'ID mavjud emas' }}</span></div>
                             </div>
                         </td>
                         <td><div>{{ row.student.faculty|default:'-' }}</div><div class="muted">{{ row.student.level|default:'-' }}-kurs</div></td>
@@ -222,7 +223,7 @@
                         <td><div class="scale-list">{% for scale_result in row.red_scales %}<span class="scale-tag">{{ scale_result.scale.name }} <span class="scale-score">({{ scale_result.total_score }})</span></span>{% endfor %}</div></td>
                         <td><span class="risk-badge">🔴 {{ row.result.attempt.quiz.title }}</span></td>
                         <td class="muted">{{ row.result.created_at|date:'d.m.Y H:i' }}</td>
-                        <td><a class="button" href="{% url 'admin:main_psychologicalresult_change' row.result.pk %}">Ko‘rish</a></td>
+                        <td><a class="button" href="{% url 'admin_psychological_passport_detail' row.student.pk %}">Passport</a></td>
                     </tr>
                     {% endfor %}
                     </tbody>
