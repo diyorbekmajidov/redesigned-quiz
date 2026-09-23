@@ -1,7 +1,8 @@
 from django.views.generic import TemplateView, ListView, DetailView
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.db.models import Avg
+from django.db.models import Avg, Q
+from django.core.paginator import Paginator
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
@@ -914,5 +915,108 @@ class AdminPsychologicalStatisticsView(TemplateView):
             'faculty_stats': faculty_stats,
             # table
             'recent_results': recent_list,
+        })
+        return context
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class AdminPsychologicalRiskStudentsView(TemplateView):
+    """Admin uchun eng so'nggi natijasida qizil kategoriya chiqqan talabalar.
+
+    Bu birinchi bosqichda faqat kuzatuv ro'yxati. U hali case/task yoki tutor
+    workflow yaratmaydi. Talaba faqat eng so'nggi psixologik natijasida kamida
+    bitta ``red`` kategoriya bo'lsa ro'yxatga kiritiladi.
+    """
+
+    template_name = 'admin_psychological_risk_students.html'
+    page_size = 20
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import Prefetch
+        from main.models import PsychologicalResult, PsychologicalScaleResult, Quiz
+        from student.models import Student, StudentGroup
+
+        selected_quiz_id = self.request.GET.get('quiz', '')
+        selected_faculty = self.request.GET.get('faculty', '')
+        selected_level = self.request.GET.get('level', '')
+        selected_group_id = self.request.GET.get('group', '')
+        search_query = self.request.GET.get('q', '').strip()
+
+        scale_results = PsychologicalScaleResult.objects.select_related(
+            'scale', 'category'
+        )
+        results_qs = PsychologicalResult.objects.select_related(
+            'attempt__student__group',
+            'attempt__quiz',
+        ).prefetch_related(
+            Prefetch('scale_results', queryset=scale_results)
+        ).order_by('-created_at', '-id')
+
+        if selected_quiz_id:
+            results_qs = results_qs.filter(attempt__quiz_id=selected_quiz_id)
+        if selected_faculty:
+            results_qs = results_qs.filter(attempt__student__faculty=selected_faculty)
+        if selected_level:
+            results_qs = results_qs.filter(attempt__student__level=selected_level)
+        if selected_group_id:
+            results_qs = results_qs.filter(attempt__student__group_id=selected_group_id)
+        if search_query:
+            results_qs = results_qs.filter(
+                Q(attempt__student__student_name__icontains=search_query)
+                | Q(attempt__student__student_id_number__icontains=search_query)
+                | Q(attempt__student__hemis_id__icontains=search_query)
+            )
+
+        # Natijalar yangi -> eski keladi. Shuning uchun har bir talabaning
+        # birinchi ko'ringan natijasi uning eng so'nggi psixologik natijasidir.
+        seen_student_ids = set()
+        risk_students = []
+        for result in results_qs:
+            student = result.attempt.student
+            if student.pk in seen_student_ids:
+                continue
+            seen_student_ids.add(student.pk)
+
+            red_scales = [
+                scale_result
+                for scale_result in result.scale_results.all()
+                if scale_result.category and scale_result.category.color == 'red'
+            ]
+            if not red_scales:
+                continue
+
+            group = student.group
+            risk_students.append({
+                'student': student,
+                'result': result,
+                'group_name': group.group_name if group else '-',
+                'red_scales': red_scales,
+                'red_scale_count': len(red_scales),
+            })
+
+        paginator = Paginator(risk_students, self.page_size)
+        page_obj = paginator.get_page(self.request.GET.get('page', '1'))
+        filter_params = self.request.GET.copy()
+        filter_params.pop('page', None)
+
+        context.update({
+            'page_obj': page_obj,
+            'risk_students': page_obj.object_list,
+            'risk_students_count': paginator.count,
+            'selected_quiz_id': selected_quiz_id,
+            'selected_faculty': selected_faculty,
+            'selected_level': selected_level,
+            'selected_group_id': selected_group_id,
+            'search_query': search_query,
+            'filter_query': filter_params.urlencode(),
+            'quizzes': Quiz.objects.filter(quiz_type='psychological').order_by('title'),
+            'faculties': Student.objects.values_list(
+                'faculty', flat=True
+            ).distinct().exclude(faculty__isnull=True).exclude(faculty='').order_by('faculty'),
+            'levels': Student.objects.values_list(
+                'level', flat=True
+            ).distinct().exclude(level__isnull=True).exclude(level='').order_by('level'),
+            'groups': StudentGroup.objects.all().order_by('group_name'),
         })
         return context
